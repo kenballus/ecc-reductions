@@ -2,7 +2,7 @@ CXX := clang++
 CXXFLAGS := -std=c++20 -Wall -Werror -g -O0
 
 OBJ_DIR := obj
-_OBJ := graph.o ecc-reductions.o cover.o
+_OBJ := graph.o ecc-reductions.o cover.o timer.o
 OBJ := $(patsubst %,$(OBJ_DIR)/%,$(_OBJ))
 
 SRC_DIR := src

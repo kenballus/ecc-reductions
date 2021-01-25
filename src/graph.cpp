@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <algorithm>
 
 #include "graph.hpp"
 
@@ -46,26 +47,56 @@ Graph::Graph(std::string filename) {
 }
 
 void Graph::add_edge(node_t v1, node_t v2) {
-    assert(v1 < n && v2 < n);
-
     adj_list[v1].insert(v2);
     adj_list[v2].insert(v1);
     e++;
 }
 
 bool Graph::has_edge(node_t v1, node_t v2) const {
-    return adj_list[v1].contains(v2);
+    return neighbors(v1).contains(v2);
 }
 
-void Graph::remove_all_adjacent_edges(node_t v1) {
+void Graph::find_prisoners_and_exits(node_t v1, std::unordered_set<node_t>& prisoners, std::unordered_set<node_t>& exits) {
     for (node_t v2 : neighbors(v1)) {
-        remove_edge(v1, v2);
+        for (node_t v2_neighbor : neighbors(v2)) {
+            if (v2_neighbor == v1) continue;
+
+            if (!neighbors(v1).contains(v2_neighbor)) {
+                prisoners
+            }
+        }
     }
 }
 
+void Graph::remove_all_adjacent_edges(node_t v1) {
+    e -= neighbors(v1).size();
+
+    for (node_t v2 : neighbors(v1)) {
+        adj_list[v2].erase(v1);
+    }
+    adj_list[v1].clear();
+}
+
+bool Graph::has_same_neighbors(node_t v1, node_t v2) const {
+    for (node_t v : neighbors(v1)) {
+        if (!neighbors(v2).contains(v)) {
+            return false;
+        }
+    }
+    // This is a little redundant, but I'm not sure what would be faster.
+    for (node_t v : neighbors(v2)) {
+        if (!neighbors(v1).contains(v)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void Graph::find_common_neighbors(node_t v1, node_t v2, std::unordered_set<node_t>& output) const {
-    for (auto it = adj_list[v1].begin(); it != adj_list[v1].end(); it++) {
-        if (adj_list[v2].contains(*it)) {
+    assert(output.empty());
+    for (auto it = neighbors(v1).begin(); it != neighbors(v1).end(); it++) {
+        if (neighbors(v2).contains(*it)) {
             output.insert(*it);
         }
     }
@@ -88,17 +119,11 @@ bool Graph::exists(node_t v) const {
 }
 
 void Graph::remove_edge(node_t v1, node_t v2) {
-    bool removed_edge = false;
-    if (has_edge(v1, v2)) {
-        adj_list[v1].erase(v2);
-        removed_edge = true;
-    }
-    if (has_edge(v2, v1)) {
-        adj_list[v2].erase(v1);
-        removed_edge = true;
-    }
+    size_t result = adj_list[v1].erase(v2) + adj_list[v2].erase(v1);
 
-    assert(removed_edge);
+    e--;
+
+    assert(result);
 }
 
 std::unordered_set<node_t> const& Graph::neighbors(node_t v) const {
