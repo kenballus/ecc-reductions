@@ -7,7 +7,7 @@ OBJ := $(patsubst %,$(OBJ_DIR)/%,$(_OBJ))
 
 SRC_DIR := src
 
-BINARY_NAME := ecc-reductions
+BINARY_NAME := ecc
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(SRC_DIR)/%.hpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@ 

@@ -119,7 +119,7 @@ bool Graph::is_clique(std::unordered_set<node_t> const& nodes) const {
 }
 
 bool Graph::is_edge_clique_cover(std::vector<std::unordered_set<node_t>> const& ecc) const {
-    return false; // for now
+    return false; // to do
 }
 
 bool Graph::exists(node_t v) const {
