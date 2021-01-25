@@ -56,14 +56,18 @@ bool Graph::has_edge(node_t v1, node_t v2) const {
     return neighbors(v1).contains(v2);
 }
 
-void Graph::find_prisoners_and_exits(node_t v1, std::unordered_set<node_t>& prisoners, std::unordered_set<node_t>& exits) {
+void Graph::find_prisoners_and_exits(node_t v1, std::unordered_set<node_t>& prisoners, std::unordered_set<node_t>& exits) const {
     for (node_t v2 : neighbors(v1)) {
         for (node_t v2_neighbor : neighbors(v2)) {
             if (v2_neighbor == v1) continue;
 
             if (!neighbors(v1).contains(v2_neighbor)) {
-                prisoners
+                exits.insert(v2);
+                break;
             }
+        }
+        if (!exits.contains(v2)) {
+            prisoners.insert(v2);
         }
     }
 }
