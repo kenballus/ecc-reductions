@@ -1,0 +1,3 @@
+[submodule "gramm-ecc-reductions"]
+	path = gramm-ecc-reductions
+	url = git@github.com:kenballus/gramm-ecc-reductions.git

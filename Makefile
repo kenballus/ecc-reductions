@@ -16,6 +16,5 @@ $(BINARY_NAME): $(OBJ)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 .PHONY: clean
-
 clean:
 	rm -f $(OBJ_DIR)/*.o $(BINARY_NAME)

@@ -66,7 +66,7 @@ void apply_rule_three_prime(Graph& graph, Cover& cover) {
 }
 
 void apply_rule_three(Graph& graph, Cover& cover) {
-
+    // to do
 }
 
 int main(int argc, char* argv[]) {

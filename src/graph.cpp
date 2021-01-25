@@ -118,13 +118,16 @@ bool Graph::is_clique(std::unordered_set<node_t> const& nodes) const {
     return true;
 }
 
+bool Graph::is_edge_clique_cover(std::vector<std::unordered_set<node_t>> const& ecc) const {
+    return false; // for now
+}
+
 bool Graph::exists(node_t v) const {
     return !adj_list[v].empty();
 }
 
 void Graph::remove_edge(node_t v1, node_t v2) {
     size_t result = adj_list[v1].erase(v2) + adj_list[v2].erase(v1);
-
     e--;
 
     assert(result);

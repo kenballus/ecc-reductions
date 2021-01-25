@@ -25,6 +25,7 @@ struct Graph {
     bool is_clique(std::unordered_set<node_t> const&) const;
     bool has_same_neighbors(node_t, node_t) const;
     void find_prisoners_and_exits(node_t, std::unordered_set<node_t>&, std::unordered_set<node_t>&) const;
+    bool is_edge_clique_cover(std::vector<std::unordered_set<node_t>> const&) const;
 };
 
 std::ostream& operator<<(std::ostream&, Graph const&);
