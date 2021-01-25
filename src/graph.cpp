@@ -58,12 +58,47 @@ bool Graph::has_edge(node_t v1, node_t v2) const {
 }
 
 void Graph::remove_all_adjacent_edges(node_t v1) {
-    adj_list[v1].erase(adj_list[v1].begin(), adj_list[v1].end());
+    for (node_t v2 : neighbors(v1)) {
+        remove_edge(v1, v2);
+    }
+}
+
+void Graph::find_common_neighbors(node_t v1, node_t v2, std::unordered_set<node_t>& output) const {
+    for (auto it = adj_list[v1].begin(); it != adj_list[v1].end(); it++) {
+        if (adj_list[v2].contains(*it)) {
+            output.insert(*it);
+        }
+    }
+}
+
+bool Graph::is_clique(std::unordered_set<node_t> const& nodes) const {
+    for (auto it1 = nodes.begin(); it1 != nodes.end(); it1++) {
+        for (auto it2 = std::next(it1, 1); it2 != nodes.end(); it2++) {
+            if (!neighbors(*it2).contains(*it1)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool Graph::exists(node_t v) const {
+    return !adj_list[v].empty();
 }
 
 void Graph::remove_edge(node_t v1, node_t v2) {
-    adj_list[v1].erase(v2);
-    adj_list[v2].erase(v1);
+    bool removed_edge = false;
+    if (has_edge(v1, v2)) {
+        adj_list[v1].erase(v2);
+        removed_edge = true;
+    }
+    if (has_edge(v2, v1)) {
+        adj_list[v2].erase(v1);
+        removed_edge = true;
+    }
+
+    assert(removed_edge);
 }
 
 std::unordered_set<node_t> const& Graph::neighbors(node_t v) const {
@@ -71,7 +106,7 @@ std::unordered_set<node_t> const& Graph::neighbors(node_t v) const {
 }
 
 std::ostream& operator<<(std::ostream& os, Graph const& g) {
-    for (node_t i = 0; i < g.adj_list.size(); ++i) {
+    for (node_t i = 0; i < g.adj_list.size(); i++) {
         os << i << ": ";
         for (node_t j : g.adj_list[i]) {
             os << j << " ";

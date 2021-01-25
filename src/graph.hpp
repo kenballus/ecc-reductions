@@ -20,6 +20,9 @@ struct Graph {
     bool has_edge(node_t, node_t) const;
     std::unordered_set<node_t> const& neighbors(node_t) const;
     void remove_all_adjacent_edges(node_t);
+    bool exists(node_t v) const;
+    void find_common_neighbors(node_t, node_t, std::unordered_set<node_t>&) const;
+    bool is_clique(std::unordered_set<node_t> const&) const;
 };
 
 std::ostream& operator<<(std::ostream&, Graph const&);
