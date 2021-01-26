@@ -1,7 +1,7 @@
 #include "graph.hpp"
 #include "cover.hpp"
 
-void apply_rule_one(Graph&, Cover&);
-void apply_rule_two(Graph&, Cover&);
-void apply_rule_three_prime(Graph&, Cover&);
-void apply_rule_three(Graph& graph, Cover& cover);
+bool apply_rule_one(Graph&, Cover&);
+bool apply_rule_two(Graph&, Cover&);
+bool apply_rule_three(Graph&, Cover&);
+void fully_reduce(Graph&, Cover&, std::vector<size_t> const&);

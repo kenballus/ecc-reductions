@@ -6,34 +6,29 @@
 #include <sstream>
 #include <string>
 #include <algorithm>
+#include <unordered_map>
 
 #include "graph.hpp"
 
-Graph::Graph(size_t arg_n) {
-    n = arg_n;
+Graph::Graph() {
     e = 0;
-
-    adj_list = std::vector<std::unordered_set<node_t>>(n);
+    n = 0;
 }
 
-Graph::Graph(std::string filename) {
+Graph::Graph(std::string const& filename) {
     e = 0;
+    n = 0;
 
     // I should probably validate this input
-    std::ifstream el_ifstream = std::ifstream(filename);
-
-    assert(el_ifstream.is_open());
+    std::ifstream ifs = std::ifstream(filename);
+    assert(ifs.is_open());
 
     std::string line;
-    assert(std::getline(el_ifstream, line));
 
-    std::istringstream iss = std::istringstream(line);
-    iss >> n;
+    std::unordered_map<node_t, std::unordered_set<node_t>> adj_list;
 
-    adj_list = std::vector<std::unordered_set<node_t>>(n);
-
-    while (std::getline(el_ifstream, line)) {
-        iss = std::istringstream(line);
+    while (std::getline(ifs, line)) {
+        auto iss = std::istringstream(line);
 
         node_t v1;
         iss >> v1;
@@ -43,12 +38,37 @@ Graph::Graph(std::string filename) {
         add_edge(v1, v2);
     }
 
-    el_ifstream.close();
+    ifs.close();
+}
+
+void Graph::write_edge_list_file(std::string const& filename) const {
+    auto ofs = std::ofstream(filename);
+    assert(ofs.is_open());
+    ofs << n << '\n';
+    for (auto const& [v, neighbors] : adj_list) {
+        for (auto neighbor : neighbors) {
+            ofs << v << ' ' << neighbor << '\n';            
+        }
+    }
+    ofs.close();
+}
+
+void Graph::add_node(node_t v) {
+    assert(!adj_list.contains(v));
+
+    adj_list.insert({v, {}});
+    n++;
 }
 
 void Graph::add_edge(node_t v1, node_t v2) {
-    adj_list[v1].insert(v2);
-    adj_list[v2].insert(v1);
+    if (!adj_list.contains(v1)) {
+        add_node(v1);
+    }
+    if (!adj_list.contains(v2)) {
+        add_node(v2);
+    }
+    adj_list.find(v1)->second.insert(v2);
+    adj_list.find(v2)->second.insert(v1);
     e++;
 }
 
@@ -57,6 +77,8 @@ bool Graph::has_edge(node_t v1, node_t v2) const {
 }
 
 void Graph::find_prisoners_and_exits(node_t v1, std::unordered_set<node_t>& prisoners, std::unordered_set<node_t>& exits) const {
+    assert(prisoners.empty() && exits.empty());
+
     for (node_t v2 : neighbors(v1)) {
         for (node_t v2_neighbor : neighbors(v2)) {
             if (v2_neighbor == v1) continue;
@@ -72,13 +94,41 @@ void Graph::find_prisoners_and_exits(node_t v1, std::unordered_set<node_t>& pris
     }
 }
 
-void Graph::remove_all_adjacent_edges(node_t v1) {
+bool Graph::prisoners_dominate_exits(std::unordered_set<node_t> const& prisoners, std::unordered_set<node_t> const& exits) const {
+    for (node_t v1 : exits) {
+        bool dominated = false;
+        for (node_t v2 : prisoners) {
+            if (neighbors(v1).contains(v2)) {
+                dominated = true;
+                break;
+            }
+        }
+        if (!dominated) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void Graph::unlink_node(node_t v1) {
     e -= neighbors(v1).size();
 
     for (node_t v2 : neighbors(v1)) {
-        adj_list[v2].erase(v1);
+        adj_list.find(v2)->second.erase(v1);
     }
-    adj_list[v1].clear();
+    adj_list.find(v1)->second.clear();
+}
+
+void Graph::delete_node(node_t v) {
+    // Should be used in conjunction with unlink_node
+    adj_list.erase(v);
+    n--;
+}
+
+void Graph::remove_node(node_t v) {
+    unlink_node(v);
+    delete_node(v);
 }
 
 bool Graph::has_same_neighbors(node_t v1, node_t v2) const {
@@ -123,25 +173,25 @@ bool Graph::is_edge_clique_cover(std::vector<std::unordered_set<node_t>> const& 
 }
 
 bool Graph::exists(node_t v) const {
-    return !adj_list[v].empty();
+    return !adj_list.find(v)->second.empty();
 }
 
 void Graph::remove_edge(node_t v1, node_t v2) {
-    size_t result = adj_list[v1].erase(v2) + adj_list[v2].erase(v1);
-    e--;
+    adj_list.find(v1)->second.erase(v2);
+    adj_list.find(v2)->second.erase(v1);
 
-    assert(result);
+    e--;
 }
 
 std::unordered_set<node_t> const& Graph::neighbors(node_t v) const {
-    return adj_list[v];
+    return adj_list.find(v)->second;
 }
 
-std::ostream& operator<<(std::ostream& os, Graph const& g) {
-    for (node_t i = 0; i < g.adj_list.size(); i++) {
-        os << i << ": ";
-        for (node_t j : g.adj_list[i]) {
-            os << j << " ";
+std::ostream& operator<<(std::ostream& os, Graph const& graph) {
+    for (auto const& [v1, neighbors] : graph.adj_list) {
+        os << v1 << ": ";
+        for (node_t v2 : neighbors) {
+            os << v2 << " ";
         }
         os << std::endl;
     }

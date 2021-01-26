@@ -4,7 +4,6 @@
 #include "cover.hpp"
 #include "graph.hpp"
 
-
 size_t node_pair_hash::operator()(std::pair<uint32_t, uint32_t> const& p) const {
 // Ensure that size_t, the type of the hash, is large enough
     assert(sizeof(size_t) >= sizeof(uint32_t) * 2);
@@ -16,32 +15,25 @@ Cover::Cover() {
 }
 
 bool Cover::is_covered(node_t v1, node_t v2) const {
-    return covered_edges.contains(std::make_pair(v1, v2));
+    return covered_edges.contains({v1, v2});
 }
 
 void Cover::cover_edge(node_t v1, node_t v2) {
-    auto pair = std::make_pair(v1, v2);
-    if (!covered_edges.contains(pair)) {
-        covered_edges.insert(pair);
+    if (!covered_edges.contains({v1, v2})) {
+        covered_edges.insert({v1, v2});
     }
-    pair = std::make_pair(v2, v1);
-    if (!covered_edges.contains(pair)) {
-        covered_edges.insert(pair);
+    if (!covered_edges.contains({v2, v1})) {
+        covered_edges.insert({v2,v1});
     }
 }
 
 void Cover::shadow_node(node_t target, node_t shadow) {
-    shadows.push_back(std::make_pair(target, shadow));
+    // Shadow will be inserted into any clique that target is in.
+    shadows.push_back({target, shadow});
 }
 
-#include <iostream> // Remember to eventually delete me.
 void Cover::cover_clique(std::unordered_set<node_t> const& clique) {
     size++;
-    std::cout << "Found clique: ";
-    for (auto it = clique.begin(); it != clique.end(); it++) {
-        std::cout << *it << " ";
-    }
-    std::cout << std::endl;
 
     bool is_new_clique = false;
     for (auto it1 = clique.begin(); it1 != clique.end(); it1++) {

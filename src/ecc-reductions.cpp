@@ -8,30 +8,38 @@
 #include "graph.hpp"
 #include "timer.hpp"
 
-void apply_rule_one(Graph& graph, Cover& cover) {
-    for (node_t v1 = 0; v1 < graph.n; v1++) {
-        if (!graph.exists(v1)) continue;
+bool apply_rule_one(Graph& graph, Cover& cover) {
+    bool ret = false;
 
+    std::vector<node_t> to_remove;
+    for (auto const& [v1, v1_neighbors] : graph.adj_list) {
         bool all_edges_covered = true;
-        for (node_t v2 : graph.neighbors(v1)) {
+        for (node_t v2 : v1_neighbors) {
             if (!cover.is_covered(v1, v2)) {
                 all_edges_covered = false;
                 break;
             }
         }
 
-        // A node is considered "removed" when it has no neighbors.
         if (all_edges_covered) {
-            graph.remove_all_adjacent_edges(v1);
+            graph.unlink_node(v1);
+            to_remove.push_back(v1);
+            ret = true;
         }
     }
+
+    for (node_t v : to_remove) {
+        graph.delete_node(v);
+    }
+
+    return ret;
 }
 
-void apply_rule_two(Graph& graph, Cover& cover) {
-    for (node_t v1 = 0; v1 < graph.n; v1++) {
-        if (!graph.exists(v1)) continue;
+bool apply_rule_two(Graph& graph, Cover& cover) {
+    size_t ret = 0;
 
-        for (node_t v2 : graph.neighbors(v1)) {
+    for (auto const& [v1, v1_neighbors] : graph.adj_list) {
+        for (node_t v2 : v1_neighbors) {
             if (v2 <= v1 or cover.is_covered(v1, v2)) continue;
 
             std::unordered_set<node_t> common_neighbors;
@@ -41,31 +49,60 @@ void apply_rule_two(Graph& graph, Cover& cover) {
 
             if (graph.is_clique(common_neighbors)) {
                 cover.cover_clique(common_neighbors);
+                ret++;
             }
         }
     }
+
+    return ret;
 }
 
-void apply_rule_three_prime(Graph& graph, Cover& cover) {
-    for (node_t v1 = 0; v1 < graph.n; v1++) {
-        if (!graph.exists(v1)) continue;
+bool apply_rule_three(Graph& graph, Cover& cover) {
+    // Assumes full reduction wrt rules 1 and 2.
+    bool ret = false;
 
-        std::vector<std::pair<node_t, node_t>> to_shadow;
-        for (node_t v2 : graph.neighbors(v1)) {
-            if (v2 <= v1) continue;
+    std::vector<node_t> to_delete;
+    for (auto const& kv_pair : graph.adj_list) {
+        node_t v = kv_pair.first;
 
-            if (graph.has_same_neighbors(v1, v2)) {
-                to_shadow.push_back(std::make_pair(v1, v2));
+        std::unordered_set<node_t> prisoners;
+        std::unordered_set<node_t> exits;
+        graph.find_prisoners_and_exits(v, prisoners, exits);
+
+        bool deleting_v = false;
+        if (!prisoners.empty() && graph.prisoners_dominate_exits(prisoners, exits)) {
+            for (node_t prisoner : prisoners) {
+                cover.shadow_node(prisoner, v);
             }
+            deleting_v = true;
+            ret = true;
         }
+        if (deleting_v) {
+            to_delete.push_back(v);
+            graph.unlink_node(v);
+        }
+    }
 
-        for (auto it = to_shadow.begin(); it != to_shadow.end(); it++) {
-            graph.remove_edge((*it).first, (*it).second);
-        }
+    for (node_t v : to_delete) {
+        graph.delete_node(v);
+    }
+
+    return ret;
+}
+
+void fully_reduce(Graph& graph, Cover& cover) {
+    while (true) {
+        if (apply_rule_one(graph, cover))
+            continue;
+        if (apply_rule_two(graph, cover))
+            continue;
+        if (apply_rule_three(graph, cover))
+            continue;
+        return;
     }
 }
 
-void apply_rule_three(Graph& graph, Cover& cover) {
+void brute_force(Graph& graph, Cover& cover) {
     // to do
 }
 
@@ -77,20 +114,16 @@ int main(int argc, char* argv[]) {
     Graph graph = Graph(argv[1]);
     Cover cover = Cover();
 
-    std::cout << graph << std::endl;
+    std::cout << "Graph has " << graph.e << " edges and " << graph.n << " nodes." << std::endl;
 
     Timer t;
     t.start();
+    fully_reduce(graph, cover);
+    double elapsed = t.stop();
 
-    apply_rule_two(graph, cover);
-    apply_rule_one(graph, cover);
-    apply_rule_three_prime(graph, cover);
-
-    std::cout << "Time elapsed: " << t.stop() << " ms." << std::endl;
-
-    std::cout << graph << std::endl;
-
+    std::cout << "Time elapsed: " << elapsed << " ms." << std::endl;
     std::cout << "Reductions found " << cover.size << " cliques." << std::endl;
+    std::cout << "Reduced graph has " << graph.e << " edges and " << graph.n << " nodes." << std::endl;
 
     return 0;
 }
