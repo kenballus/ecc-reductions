@@ -1,38 +1,32 @@
 #pragma once
 
 #include <unordered_set>
-#include <unordered_map>
 #include <vector>
 #include <string>
 
-typedef uint32_t node_t; // I might eventually need more than 4 billion nodes...
+#include "adjacency_list.hpp"
 
-struct Graph {
-    std::unordered_map<node_t, std::unordered_set<node_t>> adj_list;
+class Graph {
+private:
+    AdjacencyList adj_list;
+
+public:
     size_t n;
     size_t e;
 
     Graph();
     Graph(std::string const&);
 
-    void add_edge(node_t, node_t);
-    void remove_edge(node_t, node_t);
-    void unlink_node(node_t);
-    void delete_node(node_t);
-    void remove_node(node_t);
-    void add_node(node_t);
-
-    bool has_edge(node_t, node_t) const;
-    std::unordered_set<node_t> const& neighbors(node_t) const;
-    bool exists(node_t v) const;
-    void find_common_neighbors(node_t, node_t, std::unordered_set<node_t>&) const;
-    bool is_clique(std::unordered_set<node_t> const&) const;
-    bool has_same_neighbors(node_t, node_t) const;
-    void find_prisoners_and_exits(node_t, std::unordered_set<node_t>&, std::unordered_set<node_t>&) const;
-    bool is_edge_clique_cover(std::vector<std::unordered_set<node_t>> const&) const;
-    bool prisoners_dominate_exits(std::unordered_set<node_t> const&, std::unordered_set<node_t> const&) const;
-
     void write_edge_list_file(std::string const&) const;
-};
 
-std::ostream& operator<<(std::ostream&, Graph const&);
+    adj_list_data_t const& get_adj_list() const;
+    // Ideally, there would be an iterable for nodes and an iterable for edges.
+    // I don't know how to do this yet.
+
+    // These methods do precondition checks, then call corresponding methods in AdjacencyList.
+    void add_edge(node_t, node_t);
+    void add_node(node_t);
+    bool has_edge(node_t, node_t) const;
+    bool has_node(node_t v) const;
+    node_container_t const& neighbors(node_t) const;
+};
