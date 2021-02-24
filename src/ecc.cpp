@@ -327,10 +327,6 @@ bool compute_edge_clique_cover(Graph& graph, Cover& cover, size_t k) {
         return false;
     }
 
-    if (cover.removed_nodes.size() == graph.n) { // This is really slow, and should be fixed.
-        std::cerr << "Removed all nodes." << std::endl;
-        return true;
-    }
     if (is_edge_clique_cover(graph, cover)) {
         std::cerr << "Cover is complete." << std::endl;
         return true;
