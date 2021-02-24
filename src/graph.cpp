@@ -1,11 +1,7 @@
-#include <vector>
-#include <unordered_set>
 #include <cassert>
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <unordered_map>
-#include <stack>
 
 #include "graph.hpp"
 #include "adjacency_list.hpp"

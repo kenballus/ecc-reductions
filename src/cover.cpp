@@ -49,7 +49,7 @@ void Cover::unshadow() {
 
         for (size_t i = 0; i < to_add.size(); i++) {
             if (shadows.contains(to_add[i])) { // If the things we just added have shadows,
-                std::unordered_set<node_t> shadow_set = shadows.find(to_add[i])->second;
+                node_container_t shadow_set = shadows.find(to_add[i])->second;
                 to_add.insert(to_add.end(), shadow_set.begin(), shadow_set.end()); // don't forget about them.
             }
         }
@@ -60,7 +60,7 @@ void Cover::unshadow() {
     }
 }
 
-void Cover::cover_clique(std::unordered_set<node_t> const& clique) {
+void Cover::cover_clique(node_container_t const& clique) {
     bool is_new_clique = false;
     for (auto it1 = clique.cbegin(); it1 != clique.cend(); it1++) {
         for (auto it2 = std::next(it1, 1); it2 != clique.cend(); it2++) {
@@ -77,4 +77,8 @@ void Cover::cover_clique(std::unordered_set<node_t> const& clique) {
 
 bool Cover::is_removed(node_t v) const {
     return removed_nodes.contains(v);
+}
+
+size_t Cover::num_covered_edges() const {
+    return covered_edges.size() / 2;
 }

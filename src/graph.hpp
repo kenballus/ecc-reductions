@@ -19,9 +19,7 @@ public:
 
     void write_edge_list_file(std::string const&) const;
 
-    adj_list_data_t const& get_adj_list() const;
-    // Ideally, there would be an iterable for nodes and an iterable for edges.
-    // I don't know how to do this yet.
+    adj_list_data_t const& get_adj_list() const; // This will eventually be replaced with an iterable for nodes and an iterable for edges
 
     // These methods do precondition checks, then call corresponding methods in AdjacencyList.
     void add_edge(node_t, node_t);

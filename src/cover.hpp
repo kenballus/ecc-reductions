@@ -27,4 +27,5 @@ public:
     void shadow_node(node_t, node_t);
     bool is_removed(node_t) const;
     void remove_node(node_t);
+    size_t num_covered_edges() const;
 };
