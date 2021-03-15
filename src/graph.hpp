@@ -3,6 +3,7 @@
 #include <unordered_set>
 #include <vector>
 #include <string>
+#include <ostream>
 
 #include "adjacency_list.hpp"
 

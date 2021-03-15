@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <ostream>
 
 #include "graph.hpp"
 #include "adjacency_list.hpp"

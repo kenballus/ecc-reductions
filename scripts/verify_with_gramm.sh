@@ -7,7 +7,7 @@ else
 	graph_dir=$1
 fi
 
-for graph in $graph_dir/*.el
+for graph in $graph_dir/*.edges
 do
 	echo "Running gramm on $graph..."
 	gramm=$(timeout 30s ./gramm*/ecc -3 -4 < $graph | wc -l)
@@ -23,4 +23,3 @@ do
 		# exit 1
 	fi
 done
-

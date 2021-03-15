@@ -1,6 +1,0 @@
-Graph: random22.el
-Alg: it.unipi.di.clq.eps.lists.EPSc
-Time: 14
-Cliques: 272
-Removed: 0
-Sum: 702

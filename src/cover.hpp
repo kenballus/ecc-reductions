@@ -22,7 +22,6 @@ public:
 
     bool is_covered(node_t, node_t) const;
     void cover_edge(node_t, node_t);
-    void unshadow();
     void cover_clique(node_container_t const&);
     void shadow_node(node_t, node_t);
     bool is_removed(node_t) const;
