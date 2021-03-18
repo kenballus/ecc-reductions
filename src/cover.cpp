@@ -8,7 +8,7 @@
 
 size_t NodePairHash::operator()(std::pair<uint32_t, uint32_t> const& p) const {
     // Ensure that size_t, the type of the hash, is large enough
-    assert(sizeof(size_t) >= sizeof(uint32_t) * 2);
+    assert(sizeof(size_t) >= sizeof(uint32_t) * 2); // It usually is
     return (((size_t)p.first) << sizeof(uint32_t)) | (size_t)p.second;
 }
 

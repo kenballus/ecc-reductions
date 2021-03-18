@@ -20,6 +20,6 @@ do
 		echo "Passed."
 	else
 		echo "Failed!"
-		# exit 1
+		exit 1
 	fi
 done

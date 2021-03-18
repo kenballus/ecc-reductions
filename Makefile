@@ -1,5 +1,5 @@
 CXX := clang++
-CXXFLAGS := -std=c++20 -Wall -Werror -g -O0
+CXXFLAGS := -std=c++20 -Wall -g 
 
 OBJ_DIR := obj
 _OBJ := adjacency_list.o graph.o ecc.o cover.o 

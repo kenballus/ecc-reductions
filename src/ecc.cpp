@@ -29,7 +29,7 @@ size_t apply_rule_one(Graph const& graph, Cover& cover) {
             for (node_t neighbor : graph.neighbors(v1)) {
                 cover.cover_edge(neighbor, v1);
             }
-            std::cerr << "Rule 1 is removing " << v1 << std::endl;
+            std::cerr << "Rule 1 is removing " << v1 << "\n";
             ret++;
         }
     }
@@ -39,7 +39,6 @@ size_t apply_rule_one(Graph const& graph, Cover& cover) {
 
 void compute_common_neighbors(Graph const& graph, Cover const& cover, node_t v1, node_t v2, node_container_t& output) {
     assert(output.empty());
-    // std::cerr << "Finding common neighbors of " << v1 << " and " << v2 << std::endl;
 
     // Assumes `nodes` contains only valid nodes (not removed)
 
@@ -47,10 +46,8 @@ void compute_common_neighbors(Graph const& graph, Cover const& cover, node_t v1,
         if (cover.is_removed(neighbor) or neighbor == v2) continue;
         if (graph.has_edge(v2, neighbor)) {
             output.insert(neighbor);
-            // std::cerr << "" << neighbor  << " is a common neighbor of " << v1 << " and " << v2 << std::endl;
         }
         else {
-            // std::cerr << "" << neighbor << " is not a common neighbor of " << v1 << " and " << v2 << std::endl;
         }
     }
 }
@@ -85,7 +82,7 @@ size_t apply_rule_two(Graph const& graph, Cover& cover) {
                 for (auto& thing : common_neighbors) {
                     std::cerr << thing << " ";
                 }
-                std::cerr << std::endl;
+                std::cerr << "\n";
                 cover.cover_clique(common_neighbors);
                 ret++;
             }
@@ -98,8 +95,6 @@ size_t apply_rule_two(Graph const& graph, Cover& cover) {
 void compute_prisoners_and_exits(Graph const& graph, Cover const& cover, node_t v1, node_container_t& prisoners, node_container_t& exits) {
     assert(prisoners.empty());
     assert(exits.empty());
-
-    // std::cerr << "Computing prisoners and exits of " << v1 << std::endl;
 
     for (node_t v2 : graph.neighbors(v1)) {
         if (cover.is_removed(v2)) continue;
@@ -138,6 +133,7 @@ bool prisoners_dominate_exits(Graph const& graph, Cover const& cover, node_conta
 
     return true;
 }
+
 size_t apply_rule_three(Graph const& graph, Cover& cover) {
     // Assumes full reduction wrt rules 1 and 2.
 
@@ -152,7 +148,7 @@ size_t apply_rule_three(Graph const& graph, Cover& cover) {
         for (node_t const& prisoner : prisoners) {
             bool found_valid_nbr = false;
             for (auto const& nbr_of_prisoner : graph.neighbors(prisoner)) {
-                if (nbr_of_prisoner != v and not cover.is_removed(nbr_of_prisoner)) {
+                if (nbr_of_prisoner != v and not cover.is_removed(nbr_of_prisoner) and not cover.is_covered(nbr_of_prisoner, prisoner)) {
                     found_valid_nbr = true;
                     break;
                 }
@@ -166,19 +162,19 @@ size_t apply_rule_three(Graph const& graph, Cover& cover) {
             for (auto const& prisoner : prisoners) {
                 std::cerr << prisoner << " ";
             }
-            std::cerr << std::endl;
+            std::cerr << "\n";
             std::cerr << "Exits of " << v << ": ";
             for (auto const& exit : exits) {
                 std::cerr << exit << " ";
             }
-            std::cerr << std::endl;
+            std::cerr << "\n";
 
             for (node_t prisoner : prisoners) {
                 cover.shadow_node(prisoner, v);
-                std::cerr << v << " should be inserted into every clique containing " << prisoner << " from now on." << std::endl;
+                std::cerr << v << " should be inserted into every clique containing " << prisoner << " from now on." << "\n";
             }
             cover.remove_node(v);
-            std::cerr << "Rule 3 is removing " << v << std::endl;
+            std::cerr << "Rule 3 is removing " << v << "\n";
             for (node_t neighbor : graph.neighbors(v)) {
                 cover.cover_edge(v, neighbor);
             }
@@ -338,6 +334,9 @@ void print_reduced_graph(Graph const& graph, Cover const& cover) {
             if (n > neighbor or cover.is_removed(neighbor)) {
                 continue;
             }
+            if (cover.is_covered(n, neighbor)) {
+                std::cout << "#color=red" << std::endl;
+            }
             std::cout << n << " " << neighbor << std::endl;
         }
     }
@@ -353,7 +352,7 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t k) {
     }
 
     if (is_edge_clique_cover(graph, cover)) {
-        std::cerr << "Cover is complete." << std::endl;
+        std::cerr << "Cover is complete.\n";
         return true;
     }
 
@@ -362,7 +361,7 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t k) {
     
     std::pair<node_t, node_t> const best_edge = pick_lowest_score_edge(graph, cover);
     if (best_edge.first == std::numeric_limits<node_t>::max()) {
-        std::cerr << "Best edge didn't get set. Probably all the nodes are removed." << std::endl;
+        std::cerr << "Best edge didn't get set. Probably all the nodes are removed.\n";
         exit(1);
     }
 
@@ -391,7 +390,7 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t k) {
         for (auto const& node : cliques[i]) {
             std::cerr << node << " ";
         }
-        std::cerr << std::endl;
+        std::cerr << "\n";
         if (compute_edge_clique_cover(graph, new_covers[i], k) and new_covers[i].cliques.size() < min_clique_cover) {
             min_clique_cover = new_covers[i].cliques.size();
             cover = new_covers[i]; // Shouldn't be a copy
@@ -401,14 +400,14 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t k) {
         for (auto const& node : cliques[i]) {
             std::cerr << node << " ";
         }
-        std::cerr << std::endl;
+        std::cerr << "\n";
     }
 
     std::cerr << "Best branch with clique: ";
         for (auto const& node : best_branch_clique) {
             std::cerr << node << " ";
         }
-        std::cerr << std::endl;
+        std::cerr << "\n";
 
     return true;
 }
