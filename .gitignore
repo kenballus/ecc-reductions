@@ -1,2 +1,4 @@
 obj/
 ecc
+.gdb_history
+.callgrind.out.*
