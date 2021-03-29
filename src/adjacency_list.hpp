@@ -1,11 +1,19 @@
 #pragma once
 
-#include <unordered_set>
 #include <unordered_map>
 #include <cstdint>
+#include <vector>
 
 typedef uint32_t node_t; // I might eventually need more than 4 billion nodes...
-typedef std::unordered_set<node_t> node_container_t;
+
+class NodeVector : public std::vector<node_t> {
+public:
+    bool contains(node_t const&) const;
+    void insert(node_t const&);
+    void erase(node_t const&);
+};
+
+typedef NodeVector node_container_t;
 typedef std::unordered_map<node_t, node_container_t> adj_list_data_t;
 
 class AdjacencyList {

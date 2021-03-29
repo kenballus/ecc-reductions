@@ -3,6 +3,7 @@
 #include <utility>
 #include <cassert>
 #include <limits>
+#include <unordered_set>
 
 #include "ecc.hpp"
 #include "cover.hpp"
@@ -29,7 +30,7 @@ size_t apply_rule_one(Graph const& graph, Cover& cover) {
             for (node_t neighbor : graph.neighbors(v1)) {
                 cover.cover_edge(neighbor, v1);
             }
-            std::cerr << "Rule 1 is removing " << v1 << "\n";
+            // std::cerr << "Rule 1 is removing " << v1 << "\n";
             ret++;
         }
     }
@@ -40,7 +41,7 @@ size_t apply_rule_one(Graph const& graph, Cover& cover) {
 void compute_common_neighbors(Graph const& graph, Cover const& cover, node_t v1, node_t v2, node_container_t& output) {
     assert(output.empty());
 
-    // Assumes `nodes` contains only valid nodes (not removed)
+    // Assumes nodes contains only valid nodes (not removed)
 
     for (node_t neighbor : graph.neighbors(v1)) {
         if (cover.is_removed(neighbor) or neighbor == v2) continue;
@@ -78,11 +79,9 @@ size_t apply_rule_two(Graph const& graph, Cover& cover) {
             common_neighbors.insert(v2);
 
             if (is_clique(graph, cover, common_neighbors)) {
-                std::cerr << "Rule 2 is using " << v1 << " " << v2 << " to add the clique ";
-                for (auto& thing : common_neighbors) {
-                    std::cerr << thing << " ";
-                }
-                std::cerr << "\n";
+                // std::cerr << "Rule 2 is using " << v1 << " " << v2 << " to add the clique ";
+                // for (auto& thing : common_neighbors) std::cerr << thing << " ";
+                // std::cerr << "\n";
                 cover.cover_clique(common_neighbors);
                 ret++;
             }
@@ -158,23 +157,19 @@ size_t apply_rule_three(Graph const& graph, Cover& cover) {
 
         if (prisoners_dominate_exits(graph, cover, prisoners, exits)) {
             // DEBUG
-            std::cerr << "Prisoners of " << v << ": ";
-            for (auto const& prisoner : prisoners) {
-                std::cerr << prisoner << " ";
-            }
-            std::cerr << "\n";
-            std::cerr << "Exits of " << v << ": ";
-            for (auto const& exit : exits) {
-                std::cerr << exit << " ";
-            }
-            std::cerr << "\n";
+            // std::cerr << "Prisoners of " << v << ": ";
+            // for (auto const& prisoner : prisoners) std::cerr << prisoner << " ";
+            // std::cerr << "\n";
+            // std::cerr << "Exits of " << v << ": ";
+            // for (auto const& exit : exits)  std::cerr << exit << " ";
+            // std::cerr << "\n";
 
             for (node_t prisoner : prisoners) {
                 cover.shadow_node(prisoner, v);
-                std::cerr << v << " should be inserted into every clique containing " << prisoner << " from now on." << "\n";
+                // std::cerr << v << " should be inserted into every clique containing " << prisoner << " from now on." << "\n";
             }
             cover.remove_node(v);
-            std::cerr << "Rule 3 is removing " << v << "\n";
+            // std::cerr << "Rule 3 is removing " << v << "\n";
             for (node_t neighbor : graph.neighbors(v)) {
                 cover.cover_edge(v, neighbor);
             }
@@ -208,11 +203,16 @@ bool decompress_verify(Graph const& original, Cover const& cover) {
         }
     }
 
-    if (original.get_adj_list().empty()) {
-        return decompressed.get_adj_list().empty();
-    }
     for (auto const& [v, v_neighbors] : original.get_adj_list()) {
-        if (not decompressed.has_node(v) or v_neighbors != decompressed.neighbors(v)) return false;
+        if (not decompressed.has_node(v)) {
+            return false;
+        }
+        std::unordered_set<node_t> neighbors;
+        neighbors.insert(v_neighbors.begin(), v_neighbors.end());
+        neighbors.insert(decompressed.neighbors(v).begin(), decompressed.neighbors(v).end());
+        if (neighbors.size() != v_neighbors.size() or neighbors.size() != decompressed.neighbors(v).size()) {
+            return false;
+        }
     }
 
     return true;
@@ -235,7 +235,7 @@ void compute_all_maximal_cliques(Graph const& graph, Cover const& cover, node_co
     }
 
     while (not P.empty()) {
-        node_t v = *P.cbegin();
+        node_t const v = *P.cbegin();
         node_container_t new_R = R;
         new_R.insert(v);
         node_container_t new_P;
@@ -326,6 +326,7 @@ std::pair<node_t, node_t> const pick_first_edge(Graph const& graph, Cover const&
 }
 
 void print_reduced_graph(Graph const& graph, Cover const& cover) {
+    // For debugging
     for (auto const& [n, neighbors] : graph.get_adj_list()) {
         if (cover.is_removed(n)) {
             continue;
@@ -335,9 +336,9 @@ void print_reduced_graph(Graph const& graph, Cover const& cover) {
                 continue;
             }
             if (cover.is_covered(n, neighbor)) {
-                std::cout << "#color=red" << std::endl;
+                std::cout << "#color=red\n";
             }
-            std::cout << n << " " << neighbor << std::endl;
+            std::cout << n << " " << neighbor << "\n";
         }
     }
 }
@@ -345,71 +346,56 @@ void print_reduced_graph(Graph const& graph, Cover const& cover) {
 bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t k) {
     // Apply reductions. If it works, then we're done.
     apply_reductions(graph, cover);
-    // print_reduced_graph(graph, cover);
 
-    if (cover.cliques.size() > k) {
-        return false;
-    }
+    if (cover.cliques.size() >= k) return false;
+    if (is_edge_clique_cover(graph, cover)) return true;
 
-    if (is_edge_clique_cover(graph, cover)) {
-        std::cerr << "Cover is complete.\n";
-        return true;
-    }
-
-    std::vector<node_container_t> cliques;
-    node_container_t common_neighbors;
-    
-    std::pair<node_t, node_t> const best_edge = pick_lowest_score_edge(graph, cover);
+    std::pair<node_t, node_t> const best_edge = pick_first_edge(graph, cover);
     if (best_edge.first == std::numeric_limits<node_t>::max()) {
-        std::cerr << "Best edge didn't get set. Probably all the nodes are removed.\n";
+        // std::cerr << "Best edge didn't get set. Probably all the nodes are removed.\n";
         exit(1);
     }
 
-    // Make R, P, and X.
+    // Make R, P, and X from Bron Kerbosch
     // R contains vertices that have to be in the clique (for us, v1 and v2)
     // P contains vertices that could be in the clique (for us, their common neighbors)
     // X contains the clique as it is built. It's initialized empty.
 
+    node_container_t common_neighbors;
     compute_common_neighbors(graph, cover, best_edge.first, best_edge.second, common_neighbors);
-    node_container_t R = {best_edge.first, best_edge.second};
+    node_container_t R;
+    R.insert(best_edge.first);
+    R.insert(best_edge.second);
     node_container_t X;
+    std::vector<node_container_t> cliques;
     compute_all_maximal_cliques(graph, cover, R, common_neighbors, X, cliques);
+    assert(not cliques.empty());
 
-    // There's a better way to do this with one loop.
-
-    std::vector<Cover> new_covers;
+    Cover best_cover = Cover(graph.n);
+    bool found_better_cover = false;
+    size_t size_of_best_cover = k;
     for (node_container_t const& clique : cliques) {
-        new_covers.push_back(cover); // Makes a copy
-        new_covers[new_covers.size() - 1].cover_clique(clique);
+        Cover new_cover = cover; // a copy, on purpose
+        new_cover.cover_clique(clique);
+        
+        // std::cerr << "Trying branch with clique: ";
+        // for (auto const& node : clique) std::cerr << node << " ";
+        // std::cerr << "\n";
+        if (compute_edge_clique_cover(graph, new_cover, size_of_best_cover) and new_cover.cliques.size() < size_of_best_cover) {
+            size_of_best_cover = new_cover.cliques.size();
+            best_cover = std::move(new_cover);
+            found_better_cover = true;
+        }
+        // std::cerr << "Done with branch with clique: ";
+        // for (auto const& node : clique) std::cerr << node << " ";
+        // std::cerr << "\n";
     }
 
-    size_t min_clique_cover = std::numeric_limits<size_t>::max();
-    node_container_t best_branch_clique; // for debugging
-    for (size_t i = 0; i < new_covers.size(); i++) {
-        std::cerr << "Trying branch with clique: ";
-        for (auto const& node : cliques[i]) {
-            std::cerr << node << " ";
-        }
-        std::cerr << "\n";
-        if (compute_edge_clique_cover(graph, new_covers[i], k) and new_covers[i].cliques.size() < min_clique_cover) {
-            min_clique_cover = new_covers[i].cliques.size();
-            cover = new_covers[i]; // Shouldn't be a copy
-            best_branch_clique = cliques[i];
-        }
-        std::cerr << "Done with branch with clique: ";
-        for (auto const& node : cliques[i]) {
-            std::cerr << node << " ";
-        }
-        std::cerr << "\n";
+    if (found_better_cover) {
+        cover = std::move(best_cover);
+        return true;
     }
-
-    std::cerr << "Best branch with clique: ";
-        for (auto const& node : best_branch_clique) {
-            std::cerr << node << " ";
-        }
-        std::cerr << "\n";
-
-    return true;
+    return false;
 }
 
 void extract_irreducible_subgraph(Graph const& graph, Cover& cover) {
@@ -419,7 +405,7 @@ void extract_irreducible_subgraph(Graph const& graph, Cover& cover) {
     for (auto const& [n1, neighbors] : graph.get_adj_list()) {
         for (node_t n2 : neighbors) {
             if (cover.is_covered(n1, n2)) {
-                std::cout << n1 << " " << n2 << std::endl;
+                std::cout << n1 << " " << n2 << "\n";
             }
         }
     }
@@ -430,9 +416,7 @@ size_t size_of_big_vertex_independent_set(Graph const& graph, Cover const& cover
 
     std::vector<node_t> ind_set;
     for (auto const& [n1, _] : graph.get_adj_list()) {
-        if (cover.is_removed(n1)) {
-            continue;
-        }
+        if (cover.is_removed(n1)) continue;
         bool independent = true;
         for (auto const& n2 : ind_set) {
             // Don't need to check if removed here, because we only add valid nodes to ind_set.
@@ -441,14 +425,12 @@ size_t size_of_big_vertex_independent_set(Graph const& graph, Cover const& cover
                 break;
             }
         }
-        if (independent) {
-            ind_set.push_back(n1);
-        }
+        if (independent) ind_set.push_back(n1);
     }
     return ind_set.size();
 }
 
-size_t size_of_big_edge_independent_set(Graph const& graph, Cover& cover) {
+size_t size_of_big_edge_independent_set(Graph const& graph, Cover const& cover) {
     // Finds a large independent set among the uncovered edges in the graph.
 
     std::vector<node_t> ind_set_vertices;

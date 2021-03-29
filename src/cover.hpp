@@ -2,6 +2,8 @@
 
 #include <utility> // for pair
 #include <vector>
+#include <unordered_set>
+#include <unordered_map>
 
 #include "graph.hpp"
 
@@ -16,9 +18,10 @@ private:
     std::unordered_map<node_t, node_container_t> shadows;
 public:
     std::vector<node_container_t> cliques;
-    node_container_t removed_nodes;
+    std::vector<bool> removed_nodes;
 
     Cover();
+    Cover(size_t const);
 
     bool is_covered(node_t, node_t) const;
     void cover_edge(node_t, node_t);

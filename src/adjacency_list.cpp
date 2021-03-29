@@ -1,7 +1,24 @@
+#include <algorithm>
 #include "adjacency_list.hpp"
+#include <initializer_list>
 
-// All this find->second business needs to get cleaned up too.
+bool NodeVector::contains(node_t const& node) const {
+    return std::find(cbegin(), cend(), node) != cend();
+}
 
+void NodeVector::insert(node_t const& node) {
+    push_back(node);
+}
+
+void NodeVector::erase(node_t const& node) {
+    auto it = std::find(cbegin(), cend(), node);
+    if (it != cend()) {
+        std::vector<node_t>& vec = *this;
+        vec.erase(it);
+    }
+}
+
+// All this find->second business needs to get cleaned up.
 AdjacencyList::AdjacencyList() {}
 
 void AdjacencyList::add_edge(node_t v1, node_t v2) {

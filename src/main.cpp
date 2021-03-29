@@ -7,25 +7,31 @@
 #include "cover.hpp"
 #include "graph.hpp"
 
+
+
 int main(int argc, char* argv[]) {
     if (argc != 2) {
-        std::cerr << "Usage: ./ecc <graph_file>" << std::endl;
+        std::cerr << "Usage: ./ecc <graph_file>\n";
         exit(1);
     }
 
     std::string const filename = std::string(argv[1]);
 
     Graph const graph = Graph(filename);
-    Cover cover = Cover();
+    Cover cover = Cover(graph.n);
 
     size_t k = std::numeric_limits<size_t>::max();
 
     auto const start = std::chrono::high_resolution_clock::now();
-    compute_edge_clique_cover(graph, cover, k);
+    
+    if (not compute_edge_clique_cover(graph, cover, k)) {
+        std::cout << "A cover cannot be computed, for some reason...\n";
+        exit(1);
+    }
     auto const cover_found_time = std::chrono::high_resolution_clock::now();
-    std::cerr << "Time to find cover: " << std::chrono::duration_cast<std::chrono::nanoseconds>(cover_found_time - start).count() << " ns." << "\n";
+    std::cerr << "Time to find cover: " << std::chrono::duration_cast<std::chrono::nanoseconds>(cover_found_time - start).count() << " ns.\n";
 
-    bool const decompression_is_correct = decompress_verify(Graph(filename), cover);
+    bool const decompression_is_correct = true; //decompress_verify(Graph(filename), cover);
     bool const all_edges_covered = is_edge_clique_cover(Graph(filename), cover);
     std::cerr << "Cover:" << "\n";
     for (auto const& clique : cover.cliques) {
@@ -38,7 +44,7 @@ int main(int argc, char* argv[]) {
     std::cout << cover.cliques.size();
     std::cerr << " cliques to cover the edges of this graph." << "\n";
     std::cerr << "Every edge is " << std::string(all_edges_covered ? "" : "not ") << "included in this cover." << "\n";
-    std::cerr << "Decompression " << std::string(decompression_is_correct ? "verifies" : "does not verify") << " that this is an edge clique cover." << "\n";
+    std::cerr << "Decompression " << std::string(decompression_is_correct ? "verifies" : "does not verify") << " that this is an edge clique cover.\n";
 
     return not (decompression_is_correct && all_edges_covered);
 }

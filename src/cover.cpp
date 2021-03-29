@@ -14,12 +14,16 @@ size_t NodePairHash::operator()(std::pair<uint32_t, uint32_t> const& p) const {
 
 Cover::Cover() {}
 
+Cover::Cover(size_t const number_of_nodes) {
+    removed_nodes = std::vector<bool>(number_of_nodes, false);
+}
+
 bool Cover::is_covered(node_t v1, node_t v2) const {
     return covered_edges.contains({v1, v2});
 }
 
 void Cover::remove_node(node_t v) {
-    removed_nodes.insert(v);
+    removed_nodes[v] = true;
 }
 
 void Cover::cover_edge(node_t v1, node_t v2) {
@@ -65,14 +69,14 @@ void Cover::cover_clique(node_container_t const& clique) {
     }
 
     assert(is_new_clique);
-    cliques.push_back(clique); // Makes a copy. (Might be bad)
+    cliques.push_back(std::move(clique));
     for (auto const& node : to_add) {
         cliques[cliques.size() - 1].insert(node);
     }
 }
 
 bool Cover::is_removed(node_t v) const {
-    return removed_nodes.contains(v);
+    return removed_nodes[v];
 }
 
 size_t Cover::num_covered_edges() const {
