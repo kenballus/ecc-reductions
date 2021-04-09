@@ -18,10 +18,13 @@ int main(int argc, char* argv[]) {
 
     size_t const k = argc > 1 ? std::stoi(argv[1]) : std::numeric_limits<size_t>::max();
     auto const start = std::chrono::high_resolution_clock::now();
-    if (not compute_edge_clique_cover(graph, cover, k)) {
+    size_t total_calls = 0;
+    bool found_cover = compute_edge_clique_cover(graph, cover, k, total_calls);
+    if (not found_cover) {
         std::cerr << "A cover cannot be computed, for some reason...\n";
         exit(1);
     }
+    std::cout << total_calls << std::endl;
     auto const cover_found_time = std::chrono::high_resolution_clock::now();
     std::cerr << "Time to find cover: ";
     std::cerr << std::chrono::duration_cast<std::chrono::nanoseconds>(cover_found_time - start).count();
@@ -35,7 +38,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "\n";
     }
     std::cerr << "It takes ";
-    std::cout << cover.cliques.size();
+    std::cerr << cover.cliques.size();
     std::cerr << " cliques to cover the edges of this graph." << "\n";
     
     bool const all_edges_covered =  true; // is_edge_clique_cover(graph, cover);

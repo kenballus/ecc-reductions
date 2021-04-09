@@ -30,7 +30,6 @@ size_t apply_rule_one(Graph const& graph, Cover& cover) {
             for (node_t neighbor : graph.neighbors(v1)) {
                 cover.cover_edge(neighbor, v1);
             }
-            // std::cerr << "Rule 1 is removing " << v1 << "\n";
             ret++;
         }
     }
@@ -47,8 +46,6 @@ void compute_common_neighbors(Graph const& graph, Cover const& cover, node_t v1,
         if (cover.is_removed(neighbor) or neighbor == v2) continue;
         if (graph.has_edge(v2, neighbor)) {
             output.insert(neighbor);
-        }
-        else {
         }
     }
 }
@@ -79,9 +76,6 @@ size_t apply_rule_two(Graph const& graph, Cover& cover) {
             common_neighbors.insert(v2);
 
             if (is_clique(graph, cover, common_neighbors)) {
-                // std::cerr << "Rule 2 is using " << v1 << " " << v2 << " to add the clique ";
-                // for (auto& thing : common_neighbors) std::cerr << thing << " ";
-                // std::cerr << "\n";
                 cover.cover_clique(common_neighbors);
                 ret++;
             }
@@ -156,20 +150,10 @@ size_t apply_rule_three(Graph const& graph, Cover& cover) {
         }
 
         if (prisoners_dominate_exits(graph, cover, prisoners, exits)) {
-            // DEBUG
-            // std::cerr << "Prisoners of " << v << ": ";
-            // for (auto const& prisoner : prisoners) std::cerr << prisoner << " ";
-            // std::cerr << "\n";
-            // std::cerr << "Exits of " << v << ": ";
-            // for (auto const& exit : exits)  std::cerr << exit << " ";
-            // std::cerr << "\n";
-
             for (node_t prisoner : prisoners) {
                 cover.shadow_node(prisoner, v);
-                // std::cerr << v << " should be inserted into every clique containing " << prisoner << " from now on." << "\n";
             }
             cover.remove_node(v);
-            // std::cerr << "Rule 3 is removing " << v << "\n";
             for (node_t neighbor : graph.neighbors(v)) {
                 cover.cover_edge(v, neighbor);
             }
@@ -395,16 +379,17 @@ size_t size_of_big_edge_independent_set(Graph const& graph, Cover const& cover) 
     return ind_set.size();
 }
 
-bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t const k) {
-    // Apply reductions. If it works, then we're done.
-    apply_reductions(graph, cover);
+bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t const k, size_t& total_calls) {
+    total_calls++;
 
-    if (cover.cliques.size() >= k) return false;
+    apply_reductions(graph, cover);
+    if (cover.cliques.size() >= k or cover.cliques.size() + std::max(size_of_big_edge_independent_set(graph, cover), size_of_big_vertex_independent_set(graph, cover)) >= k) return false;
     if (is_edge_clique_cover(graph, cover)) return true;
 
-    std::pair<node_t, node_t> const best_edge = pick_first_edge(graph, cover);
+    std::pair<node_t, node_t> const best_edge = pick_lowest_score_edge(graph, cover);
+
     if (best_edge.first == std::numeric_limits<node_t>::max()) {
-        // std::cerr << "Best edge didn't get set. Probably all the nodes are removed.\n";
+        std::cerr << "Best edge never got set. Probably every edge is deleted.\n";
         exit(1);
     }
 
@@ -429,18 +414,12 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t const k)
     for (node_container_t const& clique : cliques) {
         Cover new_cover = cover; // a copy, on purpose
         new_cover.cover_clique(clique);
-        
-        // std::cerr << "Trying branch with clique: ";
-        // for (auto const& node : clique) std::cerr << node << " ";
-        // std::cerr << "\n";
-        if (compute_edge_clique_cover(graph, new_cover, size_of_best_cover) and new_cover.cliques.size() < size_of_best_cover) {
+
+        if (compute_edge_clique_cover(graph, new_cover, size_of_best_cover, total_calls) and new_cover.cliques.size() < size_of_best_cover) {
             size_of_best_cover = new_cover.cliques.size();
             best_cover = std::move(new_cover);
             found_better_cover = true;
         }
-        // std::cerr << "Done with branch with clique: ";
-        // for (auto const& node : clique) std::cerr << node << " ";
-        // std::cerr << "\n";
     }
 
     if (found_better_cover) {

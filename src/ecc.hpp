@@ -22,7 +22,7 @@ std::pair<node_t, node_t> const pick_lowest_score_edge(Graph const&, Cover const
 std::pair<node_t, node_t> const pick_highest_score_edge(Graph const&, Cover const&);
 std::pair<node_t, node_t> const pick_first_edge(Graph const&, Cover const&);
 void print_reduced_graph(Graph const&, Cover const&);
-bool compute_edge_clique_cover(Graph const&, Cover&, size_t const);
 void extract_irreducible_subgraph(Graph const&, Cover&);
 size_t size_of_big_vertex_independent_set(Graph const&, Cover const&);
 size_t size_of_big_edge_independent_set(Graph const&, Cover const&);
+bool compute_edge_clique_cover(Graph const&, Cover&, size_t const, size_t&);
