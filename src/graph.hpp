@@ -3,7 +3,7 @@
 #include <unordered_set>
 #include <vector>
 #include <string>
-#include <ostream>
+#include <istream>
 
 #include "adjacency_list.hpp"
 
@@ -16,7 +16,7 @@ public:
     size_t e;
 
     Graph();
-    Graph(std::string const&);
+    Graph(std::istream&);
 
     void write_edge_list_file(std::string const&) const;
 

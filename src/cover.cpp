@@ -8,7 +8,7 @@
 
 size_t NodePairHash::operator()(std::pair<uint32_t, uint32_t> const& p) const {
     // Ensure that size_t, the type of the hash, is large enough
-    assert(sizeof(size_t) >= sizeof(uint32_t) * 2); // It usually is
+    // assert(sizeof(size_t) >= sizeof(uint32_t) * 2); // It usually is
     return (((size_t)p.first) << sizeof(uint32_t)) | (size_t)p.second;
 }
 
@@ -44,12 +44,12 @@ void Cover::shadow_node(node_t target, node_t shadow) {
 }
 
 void Cover::cover_clique(node_container_t const& clique) {
-    bool is_new_clique = false;
+    // bool is_new_clique = false;
     std::vector<node_t> to_add;
     for (auto it1 = clique.cbegin(); it1 != clique.cend(); it1++) {
         for (auto it2 = std::next(it1, 1); it2 != clique.cend(); it2++) {
             if (not is_covered(*it1, *it2)) {
-                is_new_clique = true;
+                // is_new_clique = true;
                 cover_edge(*it1, *it2);
             }
             if (shadows.contains(*it1)) {
@@ -68,7 +68,7 @@ void Cover::cover_clique(node_container_t const& clique) {
         }
     }
 
-    assert(is_new_clique);
+    // assert(is_new_clique);
     cliques.push_back(std::move(clique));
     for (auto const& node : to_add) {
         cliques[cliques.size() - 1].insert(node);

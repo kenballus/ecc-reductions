@@ -328,13 +328,9 @@ std::pair<node_t, node_t> const pick_first_edge(Graph const& graph, Cover const&
 void print_reduced_graph(Graph const& graph, Cover const& cover) {
     // For debugging
     for (auto const& [n, neighbors] : graph.get_adj_list()) {
-        if (cover.is_removed(n)) {
-            continue;
-        }
+        if (cover.is_removed(n)) continue;
         for (auto const& neighbor : neighbors) {
-            if (n > neighbor or cover.is_removed(neighbor)) {
-                continue;
-            }
+            if (n > neighbor or cover.is_removed(neighbor)) continue;
             if (cover.is_covered(n, neighbor)) {
                 std::cout << "#color=red\n";
             }
@@ -343,7 +339,63 @@ void print_reduced_graph(Graph const& graph, Cover const& cover) {
     }
 }
 
-bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t k) {
+void extract_irreducible_subgraph(Graph const& graph, Cover& cover) {
+    // Prints out all the edges in G that aren't covered by a single round of reductions.
+
+    apply_reductions(graph, cover);
+    for (auto const& [n1, neighbors] : graph.get_adj_list()) {
+        for (node_t n2 : neighbors) {
+            if (cover.is_covered(n1, n2)) {
+                std::cout << n1 << " " << n2 << "\n";
+            }
+        }
+    }
+}
+
+size_t size_of_big_vertex_independent_set(Graph const& graph, Cover const& cover) {
+    // Finds a large independent set among the uncovered vertices in the graph.
+
+    std::vector<node_t> ind_set;
+    for (auto const& [n1, _] : graph.get_adj_list()) {
+        if (cover.is_removed(n1)) continue;
+        bool independent = true;
+        for (auto const& n2 : ind_set) {
+            // Don't need to check if removed here, because we only add valid nodes to ind_set.
+            if (graph.has_edge(n1, n2)) {
+                independent = false;
+                break;
+            }
+        }
+        if (independent) ind_set.push_back(n1);
+    }
+    return ind_set.size();
+}
+
+size_t size_of_big_edge_independent_set(Graph const& graph, Cover const& cover) {
+    // Computes a large set of edges such that the subgraph induced by their vertices is K_4-free.
+
+    std::vector<std::pair<node_t, node_t>> ind_set;
+    for (auto const& [n1, neighbors] : graph.get_adj_list()) {
+        if (cover.is_removed(n1)) continue;
+        bool independent = true;
+        for (auto const& n2 : neighbors) {
+            if (n1 >= n2 or cover.is_removed(n2) or cover.is_covered(n1, n2)) continue;
+            for (auto const& [v1, v2] : ind_set) {
+                if (n1 == v1 or n2 == v2 or n2 == v1 or n1 == v2 or (graph.has_edge(n1, v1) and graph.has_edge(n2, v1) and graph.has_edge(n1, v2) and graph.has_edge(n2, v2))) {
+                    independent = false;
+                    break;
+                }
+            }
+            if (independent) {
+                ind_set.push_back({n1, n2});
+                break;
+            }
+        }
+    }
+    return ind_set.size();
+}
+
+bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t const k) {
     // Apply reductions. If it works, then we're done.
     apply_reductions(graph, cover);
 
@@ -396,65 +448,4 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t k) {
         return true;
     }
     return false;
-}
-
-void extract_irreducible_subgraph(Graph const& graph, Cover& cover) {
-    // Prints out all the edges in G that aren't covered by a single round of reductions.
-
-    apply_reductions(graph, cover);
-    for (auto const& [n1, neighbors] : graph.get_adj_list()) {
-        for (node_t n2 : neighbors) {
-            if (cover.is_covered(n1, n2)) {
-                std::cout << n1 << " " << n2 << "\n";
-            }
-        }
-    }
-}
-
-size_t size_of_big_vertex_independent_set(Graph const& graph, Cover const& cover) {
-    // Finds a large independent set among the uncovered vertices in the graph.
-
-    std::vector<node_t> ind_set;
-    for (auto const& [n1, _] : graph.get_adj_list()) {
-        if (cover.is_removed(n1)) continue;
-        bool independent = true;
-        for (auto const& n2 : ind_set) {
-            // Don't need to check if removed here, because we only add valid nodes to ind_set.
-            if (graph.has_edge(n1, n2)) {
-                independent = false;
-                break;
-            }
-        }
-        if (independent) ind_set.push_back(n1);
-    }
-    return ind_set.size();
-}
-
-size_t size_of_big_edge_independent_set(Graph const& graph, Cover const& cover) {
-    // Finds a large independent set among the uncovered edges in the graph.
-
-    std::vector<node_t> ind_set_vertices;
-    for (auto const& [n1, neighbors] : graph.get_adj_list()) {
-        if (cover.is_removed(n1)) {
-            continue;
-        }
-        bool independent = true;
-        for (auto const& n2 : neighbors) {
-            if (cover.is_removed(n2) or cover.is_covered(n1, n2)) {
-                continue;
-            }
-            for (auto const& n3 : ind_set_vertices) {
-                if (graph.has_edge(n1, n3) or graph.has_edge(n2, n3)) {
-                    independent = false;
-                    break;
-                }
-            }
-            if (independent) {
-                ind_set_vertices.push_back(n1);
-                ind_set_vertices.push_back(n2);
-            }
-        }
-
-    }
-    return ind_set_vertices.size() / 2;
 }

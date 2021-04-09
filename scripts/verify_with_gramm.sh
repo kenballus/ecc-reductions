@@ -10,10 +10,10 @@ fi
 for graph in $graph_dir/*.edges
 do
 	echo "Running gramm on $graph..."
-	gramm=$(timeout 30s ./gramm*/ecc -3 -4 < $graph | wc -l)
+	gramm=$(timeout 30s ./gramm*/ecc -4 < $graph | wc -l)
 	echo "Got $gramm"
 	echo "Running mine on $graph..."
-	mine=$(timeout 30s ./ecc $graph 2>/dev/null)
+	mine=$(timeout 30s ./ecc < $graph 2>/dev/null)
 	echo "Got $mine"
 	if [ $gramm -eq $mine ]
 	then

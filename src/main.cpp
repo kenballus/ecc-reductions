@@ -7,32 +7,26 @@
 #include "cover.hpp"
 #include "graph.hpp"
 
-
-
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: ./ecc <graph_file>\n";
+    if (argc > 2) {
+        std::cerr << "Usage: ./ecc [inital_k] < <graph_file>\n";
         exit(1);
     }
 
-    std::string const filename = std::string(argv[1]);
-
-    Graph const graph = Graph(filename);
+    Graph const graph = Graph(std::cin);
     Cover cover = Cover(graph.n);
 
-    size_t k = std::numeric_limits<size_t>::max();
-
+    size_t const k = argc > 1 ? std::stoi(argv[1]) : std::numeric_limits<size_t>::max();
     auto const start = std::chrono::high_resolution_clock::now();
-    
     if (not compute_edge_clique_cover(graph, cover, k)) {
-        std::cout << "A cover cannot be computed, for some reason...\n";
+        std::cerr << "A cover cannot be computed, for some reason...\n";
         exit(1);
     }
     auto const cover_found_time = std::chrono::high_resolution_clock::now();
-    std::cerr << "Time to find cover: " << std::chrono::duration_cast<std::chrono::nanoseconds>(cover_found_time - start).count() << " ns.\n";
+    std::cerr << "Time to find cover: ";
+    std::cerr << std::chrono::duration_cast<std::chrono::nanoseconds>(cover_found_time - start).count();
+    std::cerr << " ns.\n";
 
-    bool const decompression_is_correct = true; //decompress_verify(Graph(filename), cover);
-    bool const all_edges_covered = is_edge_clique_cover(Graph(filename), cover);
     std::cerr << "Cover:" << "\n";
     for (auto const& clique : cover.cliques) {
         for (auto const& node : clique) {
@@ -43,8 +37,11 @@ int main(int argc, char* argv[]) {
     std::cerr << "It takes ";
     std::cout << cover.cliques.size();
     std::cerr << " cliques to cover the edges of this graph." << "\n";
-    std::cerr << "Every edge is " << std::string(all_edges_covered ? "" : "not ") << "included in this cover." << "\n";
-    std::cerr << "Decompression " << std::string(decompression_is_correct ? "verifies" : "does not verify") << " that this is an edge clique cover.\n";
+    
+    bool const all_edges_covered =  true; // is_edge_clique_cover(graph, cover);
+    bool const decompression_is_correct = true; // decompress_verify(graph, cover);
+    // std::cerr << "Every edge is " << std::string(all_edges_covered ? "" : "not ") << "included in this cover." << "\n";
+    // std::cerr << "Decompression " << std::string(decompression_is_correct ? "verifies" : "does not verify") << " that this is an edge clique cover.\n";
 
-    return not (decompression_is_correct && all_edges_covered);
+    return not (decompression_is_correct and all_edges_covered);
 }
