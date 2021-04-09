@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <utility>
-#include <cassert>
+// #include <cassert>
 #include <limits>
 #include <unordered_set>
 
@@ -38,7 +38,7 @@ size_t apply_rule_one(Graph const& graph, Cover& cover) {
 }
 
 void compute_common_neighbors(Graph const& graph, Cover const& cover, node_t v1, node_t v2, node_container_t& output) {
-    assert(output.empty());
+    // assert(output.empty());
 
     // Assumes nodes contains only valid nodes (not removed)
 
@@ -86,8 +86,8 @@ size_t apply_rule_two(Graph const& graph, Cover& cover) {
 }
 
 void compute_prisoners_and_exits(Graph const& graph, Cover const& cover, node_t v1, node_container_t& prisoners, node_container_t& exits) {
-    assert(prisoners.empty());
-    assert(exits.empty());
+    // assert(prisoners.empty());
+    // assert(exits.empty());
 
     for (node_t v2 : graph.neighbors(v1)) {
         if (cover.is_removed(v2)) continue;
@@ -240,7 +240,7 @@ void compute_all_maximal_cliques(Graph const& graph, Cover const& cover, node_co
 }
 
 size_t compute_score(Graph const& graph, Cover const& cover, node_t v1, node_t v2) {
-    assert(graph.has_edge(v1, v2));
+    // assert(graph.has_edge(v1, v2));
 
     size_t result = 0;
     node_container_t common_neighbors;
@@ -379,7 +379,7 @@ size_t size_of_big_edge_independent_set(Graph const& graph, Cover const& cover) 
     return ind_set.size();
 }
 
-bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t const k, size_t& total_calls) {
+bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t& k, size_t& total_calls) {
     total_calls++;
 
     apply_reductions(graph, cover);
@@ -406,17 +406,16 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t const k,
     node_container_t X;
     std::vector<node_container_t> cliques;
     compute_all_maximal_cliques(graph, cover, R, common_neighbors, X, cliques);
-    assert(not cliques.empty());
+    // assert(not cliques.empty());
 
     Cover best_cover = Cover(graph.n);
     bool found_better_cover = false;
-    size_t size_of_best_cover = k;
     for (node_container_t const& clique : cliques) {
         Cover new_cover = cover; // a copy, on purpose
         new_cover.cover_clique(clique);
 
-        if (compute_edge_clique_cover(graph, new_cover, size_of_best_cover, total_calls) and new_cover.cliques.size() < size_of_best_cover) {
-            size_of_best_cover = new_cover.cliques.size();
+        if (compute_edge_clique_cover(graph, new_cover, k, total_calls) and new_cover.cliques.size() < k) {
+            k = new_cover.cliques.size();
             best_cover = std::move(new_cover);
             found_better_cover = true;
         }

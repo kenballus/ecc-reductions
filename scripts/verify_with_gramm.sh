@@ -9,17 +9,16 @@ fi
 
 for graph in $graph_dir/*.edges
 do
-	echo "Running gramm on $graph..."
-	gramm=$(timeout 30s ./gramm*/ecc -4 < $graph | wc -l)
-	echo "Got $gramm"
-	echo "Running mine on $graph..."
-	mine=$(timeout 30s ./ecc < $graph 2>/dev/null)
-	echo "Got $mine"
+    echo -n "Running on $(basename $graph)..."
+	gramm=$(./gramm*/ecc -4 < $graph | wc -l)
+	mine=$(./ecc < $graph 2>/dev/null | awk '{print $1}')
 	if [ $gramm -eq $mine ]
 	then
-		echo "Passed."
+		echo "passed."
 	else
-		echo "Failed!"
+		echo "failed!"
+        echo "I got $mine"
+        echo "Gramm got $gramm"
 		exit 1
 	fi
 done
