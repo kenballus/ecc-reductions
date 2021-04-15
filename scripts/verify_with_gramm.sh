@@ -10,7 +10,7 @@ fi
 for graph in $graph_dir/*.edges
 do
     echo -n "Running on $(basename $graph)..."
-	gramm=$(./gramm*/ecc -4 < $graph | wc -l)
+	gramm=$(./gramm-ecc-reductions/ecc -4 < $graph | wc -l)
 	mine=$(./ecc < $graph 2>/dev/null | awk '{print $1}')
 	if [ $gramm -eq $mine ]
 	then
