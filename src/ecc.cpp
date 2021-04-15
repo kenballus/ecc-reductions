@@ -383,13 +383,19 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t& k, size
     total_calls++;
 
     apply_reductions(graph, cover);
-    if (cover.cliques.size() >= k or cover.cliques.size() + std::max(size_of_big_edge_independent_set(graph, cover), size_of_big_vertex_independent_set(graph, cover)) >= k) return false;
+    if (cover.cliques.size() >= k) return false;
     if (is_edge_clique_cover(graph, cover)) return true;
+
+    size_t lower_bound = cover.cliques.size() + std::max(size_of_big_edge_independent_set(graph, cover), size_of_big_vertex_independent_set(graph, cover));
+    if (lower_bound >= k) return false;
 
     std::pair<node_t, node_t> const best_edge = pick_lowest_score_edge(graph, cover);
 
     if (best_edge.first == std::numeric_limits<node_t>::max()) {
         std::cerr << "Best edge never got set. Probably every edge is deleted.\n";
+        size_t removed_vertices = 0;
+        for (bool removed : cover.removed_nodes) removed_vertices += removed;
+        std::cerr << removed_vertices << "/" << graph.n << " vertices have been removed, and " << cover.num_covered_edges() << "/" << graph.e << " edges have been covered.\n";
         exit(1);
     }
 
@@ -423,7 +429,6 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t& k, size
 
     if (found_better_cover) {
         cover = std::move(best_cover);
-        return true;
     }
-    return false;
+    return is_edge_clique_cover(graph, cover);
 }

@@ -33,7 +33,7 @@ void AdjacencyList::add_node(node_t v) {
 }
 
 bool AdjacencyList::has_edge(node_t v1, node_t v2) const {
-    return data.find(v1)->second.contains(v2);
+    return data.find(v1)->second.contains(v2) or data.find(v2)->second.contains(v1);
 }
 
 bool AdjacencyList::has_node(node_t v) const {

@@ -64,8 +64,10 @@ void Graph::add_edge(node_t v1, node_t v2) {
     if (not has_node(v1)) add_node(v1);
     if (not has_node(v2)) add_node(v2);
 
-    adj_list.add_edge(v1, v2);
-    e++;
+    if (not adj_list.has_edge(v1, v2)) {
+        adj_list.add_edge(v1, v2);
+        e++;
+    }
 }
 
 bool Graph::has_edge(node_t v1, node_t v2) const {

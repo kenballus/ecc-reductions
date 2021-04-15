@@ -7,6 +7,9 @@
 #include "cover.hpp"
 #include "graph.hpp"
 
+// NOTE: output on stdout looks like this:
+// ecc total_calls time
+
 int main(int argc, char* argv[]) {
     if (argc > 2) {
         std::cerr << "Usage: ./ecc [inital_k] < <graph_file>\n";
@@ -27,21 +30,21 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
         else {
-            std::cerr << "Initial bound of ";
-            std::cout << k;
+            std::cerr << "Initial bound of";
+            std::cout << " " << k;
             std::cerr << " is optimal.\n";
         }
     }
     else {
-        std::cerr << "Cover:" << "\n";
-        for (auto const& clique : cover.cliques) {
-            for (auto const& node : clique) {
-                std::cerr << node << " ";
-            }
-            std::cerr << "\n";
-        }
+        // std::cerr << "Cover:" << "\n";
+        // for (auto const& clique : cover.cliques) {
+        //     for (auto const& node : clique) {
+        //         std::cerr << node << " ";
+        //     }
+        //     std::cerr << "\n";
+        // }
         std::cerr << "ECC number: ";
-        std::cout << cover.cliques.size();
+        std::cout << " " << cover.cliques.size();
         std::cerr << "\n";
     }
 
