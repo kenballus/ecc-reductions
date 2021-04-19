@@ -8,10 +8,8 @@
 #include "adjacency_list.hpp"
 
 class Graph {
-private:
-    AdjacencyList adj_list;
-
 public:
+    AdjacencyList adj_list;
     size_t n;
     size_t e;
 
@@ -29,3 +27,5 @@ public:
     bool has_node(node_t v) const;
     node_container_t const& neighbors(node_t) const;
 };
+
+std::ostream& operator<<(std::ostream& ostream, Graph const& graph);

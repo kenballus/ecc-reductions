@@ -6,6 +6,8 @@
 #include "cover.hpp"
 #include "graph.hpp"
 
-bool is_edge_clique_cover(Graph const&, Cover const&);
-bool decompress_verify(Graph const&, Cover const&);
-bool compute_edge_clique_cover(Graph const&, Cover&, size_t&, size_t&);
+bool is_edge_clique_cover(Graph const& graph, Cover const& cover);
+bool decompress_verify(Graph const& graph, Cover const& cover);
+bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t const k, size_t& total_calls);
+void order_neighbors_by_degree(Graph& graph);
+void order_neighbors_by_neighbor_degree(Graph& graph);

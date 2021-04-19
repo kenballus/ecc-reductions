@@ -336,6 +336,34 @@ void extract_irreducible_subgraph(Graph const& graph, Cover& cover) {
     }
 }
 
+void order_neighbors_by_neighbor_degree(Graph& graph) {
+    // Sort the adjacency lists so the nodes with the smallest 2-neighborhood show up first.
+    for (auto& [n1, neighbors] : graph.adj_list.data) {
+        std::sort(neighbors.begin(), neighbors.end(),
+                  [graph](node_t const& a, node_t const& b) {
+                      size_t a_sum = 0;
+                      size_t b_sum = 0;
+                      for (auto neighbor_neighbor : graph.neighbors(a)) {
+                          a_sum += graph.neighbors(neighbor_neighbor).size();
+                      }
+                      for (auto neighbor_neighbor : graph.neighbors(b)) {
+                          b_sum += graph.neighbors(neighbor_neighbor).size();
+                      }
+                      return a_sum < b_sum;
+                  });
+    }
+}
+
+void order_neighbors_by_degree(Graph& graph) {
+    // Sort the adjacency lists so the nodes with the smallest 2-neighborhood show up first.
+    for (auto& [n1, neighbors] : graph.adj_list.data) {
+        std::sort(neighbors.begin(), neighbors.end(),
+                  [graph](node_t const& a, node_t const& b) {
+                      return graph.neighbors(a).size() < graph.neighbors(b).size();
+                  });
+    }
+}
+
 size_t size_of_big_vertex_independent_set(Graph const& graph, Cover const& cover) {
     // Finds a large independent set among the uncovered vertices in the graph.
 
@@ -359,7 +387,7 @@ size_t size_of_big_edge_independent_set(Graph const& graph, Cover const& cover) 
     // Computes a large set of edges such that the subgraph induced by their vertices is K_4-free.
 
     std::vector<std::pair<node_t, node_t>> ind_set;
-    for (auto const& [n1, neighbors] : graph.get_adj_list()) {
+    for (auto & [n1, neighbors] : graph.get_adj_list()) {
         if (cover.is_removed(n1)) continue;
         bool independent = true;
         for (auto const& n2 : neighbors) {
@@ -379,7 +407,7 @@ size_t size_of_big_edge_independent_set(Graph const& graph, Cover const& cover) 
     return ind_set.size();
 }
 
-bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t& k, size_t& total_calls) {
+bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t const k, size_t& total_calls) {
     total_calls++;
 
     apply_reductions(graph, cover);
@@ -404,24 +432,28 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t& k, size
     // P contains vertices that could be in the clique (for us, their common neighbors)
     // X contains the clique as it is built. It's initialized empty.
 
-    node_container_t common_neighbors;
+    node_container_t static common_neighbors;
+    common_neighbors.clear();
     compute_common_neighbors(graph, cover, best_edge.first, best_edge.second, common_neighbors);
-    node_container_t R;
+    node_container_t static R;
+    R.clear();
     R.insert(best_edge.first);
     R.insert(best_edge.second);
-    node_container_t X;
+    node_container_t static X;
+    X.clear();
     std::vector<node_container_t> cliques;
     compute_all_maximal_cliques(graph, cover, R, common_neighbors, X, cliques);
     // assert(not cliques.empty());
 
     Cover best_cover = Cover(graph.n);
     bool found_better_cover = false;
+    size_t new_k = k;
     for (node_container_t const& clique : cliques) {
         Cover new_cover = cover; // a copy, on purpose
         new_cover.cover_clique(clique);
 
-        if (compute_edge_clique_cover(graph, new_cover, k, total_calls) and new_cover.cliques.size() < k) {
-            k = new_cover.cliques.size();
+        if (compute_edge_clique_cover(graph, new_cover, new_k, total_calls) and new_cover.cliques.size() < new_k) {
+            new_k = new_cover.cliques.size();
             best_cover = std::move(new_cover);
             found_better_cover = true;
         }
@@ -430,5 +462,6 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t& k, size
     if (found_better_cover) {
         cover = std::move(best_cover);
     }
+
     return is_edge_clique_cover(graph, cover);
 }

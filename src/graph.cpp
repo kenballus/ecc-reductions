@@ -92,3 +92,15 @@ node_container_t const& Graph::neighbors(node_t v) const {
     // assert(has_node(v));
     return adj_list.neighbors(v);
 }
+
+std::ostream& operator<<(std::ostream& ostream, Graph const& graph) {
+    for (auto const& [n, neighbors] : graph.get_adj_list()) {
+        ostream << n << ":";
+        for (auto neighbor : neighbors) {
+            ostream << " " << neighbor;
+        }
+        ostream << "\n";
+    }
+    
+    return ostream;
+}
