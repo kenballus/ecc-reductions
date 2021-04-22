@@ -1,3 +1,5 @@
+# Removes self-loops and comments from a graph, converts commas to spaces, makes vertices count from 0.
+
 import sys
 import re
 
@@ -5,10 +7,12 @@ d = {}
 counter = 0
 for line in open(sys.argv[1]).readlines():
     line = re.split(",| |\t", line.strip())
-    if line[0][0] in ("%", "#"):
+    if line[0][0] in ("%", "#", "/" ";"):
         continue
     v1 = int(line[0])
     v2 = int(line[1])
+    if v1 == v2:
+        continue
     if v1 not in d:
         d[v1] = counter
         counter+= 1

@@ -338,29 +338,37 @@ void extract_irreducible_subgraph(Graph const& graph, Cover& cover) {
 
 void order_neighbors_by_neighbor_degree(Graph& graph) {
     // Sort the adjacency lists so the nodes with the smallest 2-neighborhood show up first.
+    
+    auto keyfn = [graph](node_t const& a, node_t const& b) {
+        size_t a_sum = 0;
+        size_t b_sum = 0;
+        for (auto neighbor_neighbor : graph.neighbors(a)) {
+            a_sum += graph.neighbors(neighbor_neighbor).size();
+        }
+        for (auto neighbor_neighbor : graph.neighbors(b)) {
+            b_sum += graph.neighbors(neighbor_neighbor).size();
+        }
+        return a_sum > b_sum;
+    };
+    
+    // std::sort(graph.vertices.begin(), graph.vertices.end(), keyfn); // Makes things way too slow on big graphs
+
     for (auto& [n1, neighbors] : graph.adj_list.data) {
-        std::sort(neighbors.begin(), neighbors.end(),
-                  [graph](node_t const& a, node_t const& b) {
-                      size_t a_sum = 0;
-                      size_t b_sum = 0;
-                      for (auto neighbor_neighbor : graph.neighbors(a)) {
-                          a_sum += graph.neighbors(neighbor_neighbor).size();
-                      }
-                      for (auto neighbor_neighbor : graph.neighbors(b)) {
-                          b_sum += graph.neighbors(neighbor_neighbor).size();
-                      }
-                      return a_sum < b_sum;
-                  });
+        std::sort(neighbors.begin(), neighbors.end(), keyfn);
     }
 }
 
 void order_neighbors_by_degree(Graph& graph) {
     // Sort the adjacency lists so the nodes with the smallest 2-neighborhood show up first.
+    
+    auto keyfn = [graph](node_t const& a, node_t const& b) {
+        return graph.neighbors(a).size() > graph.neighbors(b).size();
+    };
+    
+    // std::sort(graph.vertices.begin(), graph.vertices.end(), keyfn); // Makes things way too slow on big graphs
+    
     for (auto& [n1, neighbors] : graph.adj_list.data) {
-        std::sort(neighbors.begin(), neighbors.end(),
-                  [graph](node_t const& a, node_t const& b) {
-                      return graph.neighbors(a).size() < graph.neighbors(b).size();
-                  });
+        std::sort(neighbors.begin(), neighbors.end(), keyfn);
     }
 }
 
@@ -387,7 +395,9 @@ size_t size_of_big_edge_independent_set(Graph const& graph, Cover const& cover) 
     // Computes a large set of edges such that the subgraph induced by their vertices is K_4-free.
 
     std::vector<std::pair<node_t, node_t>> ind_set;
-    for (auto & [n1, neighbors] : graph.get_adj_list()) {
+    for (auto const& n1 : graph.vertices) {
+        auto const& neighbors = graph.neighbors(n1);
+
         if (cover.is_removed(n1)) continue;
         bool independent = true;
         for (auto const& n2 : neighbors) {
@@ -420,7 +430,7 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t const k,
     std::pair<node_t, node_t> const best_edge = pick_lowest_score_edge(graph, cover);
 
     if (best_edge.first == std::numeric_limits<node_t>::max()) {
-        std::cerr << "Best edge never got set. Probably every edge is deleted.\n";
+        std::cerr << "Best edge never got set. Probably every vertex is deleted.\n";
         size_t removed_vertices = 0;
         for (bool removed : cover.removed_nodes) removed_vertices += removed;
         std::cerr << removed_vertices << "/" << graph.n << " vertices have been removed, and " << cover.num_covered_edges() << "/" << graph.e << " edges have been covered.\n";

@@ -42,9 +42,16 @@ Graph::Graph(std::istream& is) {
         iss >> v1;
         node_t v2;
         iss >> v2;
+        if (v1 == v2) continue; // We don't deal with loops
 
-        if (not has_node(v1)) add_node(v1);
-        if (not has_node(v2)) add_node(v2);
+        if (not has_node(v1)) {
+            add_node(v1);
+            vertices.push_back(v1);
+        }
+        if (not has_node(v2)) {
+            add_node(v2);
+            vertices.push_back(v2);
+        }
         add_edge(v1, v2);
     }
 }

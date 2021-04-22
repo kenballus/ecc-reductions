@@ -12,6 +12,7 @@ public:
     AdjacencyList adj_list;
     size_t n;
     size_t e;
+    std::vector<node_t> vertices;
 
     Graph();
     Graph(std::istream&);
