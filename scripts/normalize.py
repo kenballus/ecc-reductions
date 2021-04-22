@@ -1,8 +1,10 @@
 import sys
+import re
+
 d = {}
 counter = 0
 for line in open(sys.argv[1]).readlines():
-    line = line.strip().split()
+    line = re.split(",| |\t", line.strip())
     if line[0][0] in ("%", "#"):
         continue
     v1 = int(line[0])
