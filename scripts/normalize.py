@@ -2,7 +2,9 @@ import sys
 d = {}
 counter = 0
 for line in open(sys.argv[1]).readlines():
-    line = line.split()
+    line = line.strip().split()
+    if line[0][0] in ("%", "#"):
+        continue
     v1 = int(line[0])
     v2 = int(line[1])
     if v1 not in d:
