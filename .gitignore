@@ -3,3 +3,5 @@ ecc
 .gdb_history
 callgrind.out.*
 *.csv#
+*.aux
+*.log
