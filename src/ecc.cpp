@@ -1,9 +1,11 @@
 #include <iostream>
 #include <vector>
-#include <utility>
-// #include <cassert>
+#include <utility> // for pair
 #include <limits>
 #include <unordered_set>
+#include <algorithm> // for sort
+#include <cstddef> // for size_t
+using std::size_t;
 
 #include "ecc.hpp"
 #include "cover.hpp"
@@ -27,6 +29,7 @@ size_t apply_rule_one(Graph const& graph, Cover& cover) {
 
         if (all_edges_covered) {
             cover.remove_node(v1);
+            // std::cout << "Rule 1 is removing " << v1 << "\n";
             for (node_t neighbor : graph.neighbors(v1)) {
                 cover.cover_edge(neighbor, v1);
             }
@@ -38,8 +41,6 @@ size_t apply_rule_one(Graph const& graph, Cover& cover) {
 }
 
 void compute_common_neighbors(Graph const& graph, Cover const& cover, node_t v1, node_t v2, node_container_t& output) {
-    // assert(output.empty());
-
     // Assumes nodes contains only valid nodes (not removed)
 
     for (node_t neighbor : graph.neighbors(v1)) {
@@ -77,6 +78,9 @@ size_t apply_rule_two(Graph const& graph, Cover& cover) {
 
             if (is_clique(graph, cover, common_neighbors)) {
                 cover.cover_clique(common_neighbors);
+                // std::cout << "Rule 2 is adding the clique ";
+                // for (auto const& n : common_neighbors) std::cout << n << " ";
+                // std::cout << "based on edge " << v1 << " " << v2 << "\n";
                 ret++;
             }
         }
@@ -86,9 +90,6 @@ size_t apply_rule_two(Graph const& graph, Cover& cover) {
 }
 
 void compute_prisoners_and_exits(Graph const& graph, Cover const& cover, node_t v1, node_container_t& prisoners, node_container_t& exits) {
-    // assert(prisoners.empty());
-    // assert(exits.empty());
-
     for (node_t v2 : graph.neighbors(v1)) {
         if (cover.is_removed(v2)) continue;
 
@@ -137,7 +138,6 @@ size_t apply_rule_three(Graph const& graph, Cover& cover) {
         node_container_t exits;
         compute_prisoners_and_exits(graph, cover, v, prisoners, exits);
 
-        // Unnecessary if graph is already reduced with rules 1 and 2:
         for (node_t const& prisoner : prisoners) {
             bool found_valid_nbr = false;
             for (auto const& nbr_of_prisoner : graph.neighbors(prisoner)) {
@@ -150,6 +150,14 @@ size_t apply_rule_three(Graph const& graph, Cover& cover) {
         }
 
         if (prisoners_dominate_exits(graph, cover, prisoners, exits)) {
+            // std::cout << "Applying rule 3 to " << v << "\n";
+            // std::cout << "Prisoners: ";
+            // for (auto const& p: prisoners) std::cout << p << " ";
+            // std::cout << "\n";
+            // std::cout << "Exits: ";
+            // for (auto const& e : exits) std::cout << e << " ";
+            // std::cout << "\n";
+
             for (node_t prisoner : prisoners) {
                 cover.shadow_node(prisoner, v);
             }
@@ -240,8 +248,6 @@ void compute_all_maximal_cliques(Graph const& graph, Cover const& cover, node_co
 }
 
 size_t compute_score(Graph const& graph, Cover const& cover, node_t v1, node_t v2) {
-    // assert(graph.has_edge(v1, v2));
-
     size_t result = 0;
     node_container_t common_neighbors;
     compute_common_neighbors(graph, cover, v1, v2, common_neighbors);
@@ -316,9 +322,9 @@ void print_reduced_graph(Graph const& graph, Cover const& cover) {
         for (auto const& neighbor : neighbors) {
             if (n > neighbor or cover.is_removed(neighbor)) continue;
             if (cover.is_covered(n, neighbor)) {
-                std::cout << "#color=red\n";
+                // std::cout << "#color=red\n";
             }
-            std::cout << n << " " << neighbor << "\n";
+            // std::cout << n << " " << neighbor << "\n";
         }
     }
 }
@@ -330,7 +336,7 @@ void extract_irreducible_subgraph(Graph const& graph, Cover& cover) {
     for (auto const& [n1, neighbors] : graph.get_adj_list()) {
         for (node_t n2 : neighbors) {
             if (cover.is_covered(n1, n2)) {
-                std::cout << n1 << " " << n2 << "\n";
+                // std::cout << n1 << " " << n2 << "\n";
             }
         }
     }
@@ -453,20 +459,23 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t const k,
     X.clear();
     std::vector<node_container_t> cliques;
     compute_all_maximal_cliques(graph, cover, R, common_neighbors, X, cliques);
-    // assert(not cliques.empty());
 
     Cover best_cover = Cover(graph.n);
     bool found_better_cover = false;
     size_t new_k = k;
+    // std::cout << "Branching on " << best_edge.first << " " << best_edge.second << "\n";
     for (node_container_t const& clique : cliques) {
         Cover new_cover = cover; // a copy, on purpose
         new_cover.cover_clique(clique);
-
+        // std::cout << "Starting branch with this clique: ";
+        // for (auto const& n : clique) std::cout << n << " ";
+        // std::cout << "\n";
         if (compute_edge_clique_cover(graph, new_cover, new_k, total_calls) and new_cover.cliques.size() < new_k) {
             new_k = new_cover.cliques.size();
             best_cover = std::move(new_cover);
             found_better_cover = true;
         }
+        // std::cout << "Branch over.\n";
     }
 
     if (found_better_cover) {
