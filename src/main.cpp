@@ -10,6 +10,11 @@
 // NOTE: output on stdout looks like this:
 // ecc total_calls time
 
+bool const RULE_ONE_ENABLED = true;
+bool const RULE_TWO_ENABLED = true;
+bool const RULE_THREE_ENABLED = true;
+bool const RULE_FOUR_ENABLED = false;
+
 int main(int argc, char* argv[]) {
     if (argc > 2) {
         std::cerr << "Usage: ./ecc [inital_k] < <graph_file>\n";
@@ -17,15 +22,15 @@ int main(int argc, char* argv[]) {
     }
 
     Graph graph = Graph(std::cin);
+    std::cerr << "Done reading in graph.\n";
     Cover cover = Cover(graph.n);
 
-    size_t const k = argc > 1 ? std::stoi(argv[1]) : std::numeric_limits<size_t>::max();
+    size_t const k = argc > 1 ? std::stoi(argv[1]) : (graph.n * graph.n) / 4 + 1;
 
     size_t total_calls = 0;
     auto const start = std::chrono::high_resolution_clock::now();
-    // order_neighbors_by_neighbor_degree(graph);
 
-    bool found_cover = compute_edge_clique_cover(graph, cover, k, total_calls);
+    bool found_cover = compute_edge_clique_cover(graph, cover, k, total_calls, RULE_ONE_ENABLED, RULE_TWO_ENABLED, RULE_THREE_ENABLED, RULE_FOUR_ENABLED);
     auto const cover_found_time = std::chrono::high_resolution_clock::now();
 
     std::cerr << "Cover:" << "\n";
@@ -37,15 +42,9 @@ int main(int argc, char* argv[]) {
     }
 
     if (not found_cover) {
-        if (k == std::numeric_limits<size_t>::max()) {
-            std::cerr << "A cover cannot be computed, for some reason...\n";
-            exit(1);
-        }
-        else {
-            std::cerr << "Initial bound of";
-            std::cout << " " << k;
-            std::cerr << " is optimal.\n";
-        }
+        std::cerr << "Initial bound of";
+        std::cout << " " << k;
+        std::cerr << " is optimal.\n";
     }
     else {
         std::cerr << "ECC number: ";
@@ -65,6 +64,5 @@ int main(int argc, char* argv[]) {
     bool const decompression_is_correct = decompress_verify(graph, cover);
     std::cerr << "Every edge is " << std::string(all_edges_covered ? "" : "not ") << "included in this cover." << "\n";
     std::cerr << "Decompression " << std::string(decompression_is_correct ? "verifies" : "does not verify") << " that this is an edge clique cover.\n";
-
     return not (decompression_is_correct and all_edges_covered);
 }

@@ -19,19 +19,19 @@ Graph::Graph(std::istream& is) {
 
     std::string line;
     while (std::getline(is, line)) {
-        if (line.size() == 0 or line[0] == '#') continue;
+        if (line.size() == 0 or line[0] == '#' or line[0] == '%') continue;
         assert(isdigit(line[0]));
 
         bool in_gap = false;
         bool past_gap = false;
         for (char byte : line) {
-            assert(isdigit(byte) or isspace(byte));
+            assert(isdigit(byte) or isspace(byte) or byte == ',');
             if (in_gap and isdigit(byte)) {
                 in_gap = false;
                 assert(not past_gap);
                 past_gap = true;
             }
-            else if (not in_gap and isspace(byte)) {
+            else if (not in_gap and (isspace(byte) or byte == ',')) {
                 in_gap = true;
             }
         }
@@ -46,11 +46,9 @@ Graph::Graph(std::istream& is) {
 
         if (not has_node(v1)) {
             add_node(v1);
-            vertices.push_back(v1);
         }
         if (not has_node(v2)) {
             add_node(v2);
-            vertices.push_back(v2);
         }
         add_edge(v1, v2);
     }
@@ -59,6 +57,7 @@ Graph::Graph(std::istream& is) {
 void Graph::add_node(node_t v) {
     // assert(not has_node(v));
 
+    vertices.push_back(v);
     adj_list.add_node(v);
     n++;
 }

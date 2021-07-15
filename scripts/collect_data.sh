@@ -17,6 +17,6 @@ echo 'Graph,ECC,Calls,Time'
 for graph in $graphs
 do
     echo -n "$(basename $graph),"
-    ./ecc < $graph | sed -e 's/^ //g' | sed -e 's/ \+/,/g' # replace all strings of spaces with single commas
+    timeout 2m ./ecc < $graph 2>/dev/null | sed -e 's/^ //g' | sed -e 's/ \+/,/g' # replace all strings of spaces with single commas
     echo
 done

@@ -5,3 +5,4 @@ callgrind.out.*
 *.csv#
 *.aux
 *.log
+*.pdf

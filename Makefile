@@ -1,5 +1,5 @@
 CPP := g++
-CPPFLAGS := -std=c++20 -Wall -pedantic -O3
+CPPFLAGS := -std=c++20 -Wall -pedantic -O3 -march=native
 
 OBJ_DIR := obj
 _OBJ := adjacency_list.o graph.o ecc.o cover.o 
@@ -16,13 +16,9 @@ BINARY_NAME := ecc
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(SRC_DIR)/%.hpp
 	$(CPP) $(CPPFLAGS) -c $< -o $@ 
 
-# Compile main (needed because no main.hpp)
-$(OBJ_DIR)/main.o: $(SRC_DIR)/main.cpp
-	$(CPP) $(CPPFLAGS) -c $< -o $@
-
 # Compile the target
-$(BINARY_NAME): $(OBJ) $(OBJ_DIR)/main.o
-	$(CPP) $(CPPFLAGS) $^ -o $@
+$(BINARY_NAME): $(OBJ)
+	$(CPP) $(CPPFLAGS) $(SRC_DIR)/main.cpp $^ -o $@
 
 .PHONY: clean
 clean:

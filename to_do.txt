@@ -1,0 +1,3 @@
+Take connected components into account
+Implement Rule 4 but only when a new connected component would be created
+Think of a better heuristic for edge picking that takes into account the size of the cliques being selected.

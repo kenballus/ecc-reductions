@@ -5,17 +5,18 @@
 #include <unordered_set>
 #include <algorithm> // for sort
 #include <cstddef> // for size_t
+#include <cstdlib>
 using std::size_t;
 
 #include "ecc.hpp"
 #include "cover.hpp"
 #include "graph.hpp"
 
-size_t apply_rule_one(Graph const& graph, Cover& cover) {
+size_t apply_rule_one(Graph const& graph, Cover& cover, size_t const component = 0) {
     size_t ret = 0;
 
     for (auto const& [v1, v1_neighbors] : graph.get_adj_list()) {
-        if (cover.is_removed(v1)) continue;
+        if (cover.is_removed(v1) or (component != 0 and cover.components[v1] != component)) continue;
 
         bool all_edges_covered = true;
         for (node_t v2 : v1_neighbors) {
@@ -63,11 +64,11 @@ bool is_clique(Graph const& graph, Cover const& cover, node_container_t const& n
     return true;
 }
 
-size_t apply_rule_two(Graph const& graph, Cover& cover) {
+size_t apply_rule_two(Graph const& graph, Cover& cover, size_t const component = 0) {
     size_t ret = 0;
 
     for (auto const& [v1, v1_neighbors] : graph.get_adj_list()) {
-        if (cover.is_removed(v1)) continue;
+        if (cover.is_removed(v1) or (component != 0 and cover.get_component(v1) != component)) continue;
         for (node_t v2 : v1_neighbors) {
             if (v2 <= v1 or cover.is_removed(v2) or cover.is_covered(v1, v2)) continue;
 
@@ -109,9 +110,9 @@ void compute_prisoners_and_exits(Graph const& graph, Cover const& cover, node_t 
 
 bool prisoners_dominate_exits(Graph const& graph, Cover const& cover, node_container_t const& prisoners, node_container_t const& exits) {
     // Assumes prisoners and exits all exist.
-    if (prisoners.empty()) return false; // This is something to think about harder.
+    if (prisoners.empty()) return false;
     if (exits.empty()) return true;
-
+    
     for (node_t exit : exits) {
         bool dominated = false;
         for (node_t prisoner : prisoners) { // It might be better to loop over the neighbors of the exit.
@@ -128,26 +129,31 @@ bool prisoners_dominate_exits(Graph const& graph, Cover const& cover, node_conta
     return true;
 }
 
-size_t apply_rule_three(Graph const& graph, Cover& cover) {
-    // Assumes full reduction wrt rules 1 and 2.
+size_t apply_rule_three(Graph const& graph, Cover& cover, size_t const component = 0) {
 
-    for (auto const& [v, _] : graph.get_adj_list()) {
+    for (auto const& v : graph.vertices) { // Remove graph.vertices at some point
         if (cover.is_removed(v)) continue;
 
         node_container_t prisoners;
         node_container_t exits;
         compute_prisoners_and_exits(graph, cover, v, prisoners, exits);
 
+        // Not necessary when fully reduced wrt rules 1 and 2
+        bool found_valid_nbr = false;
         for (node_t const& prisoner : prisoners) {
-            bool found_valid_nbr = false;
+            found_valid_nbr = false;
             for (auto const& nbr_of_prisoner : graph.neighbors(prisoner)) {
                 if (nbr_of_prisoner != v and not cover.is_removed(nbr_of_prisoner) and not cover.is_covered(nbr_of_prisoner, prisoner)) {
                     found_valid_nbr = true;
                     break;
                 }
             }
-            if (not found_valid_nbr) return 0;
+            if (not found_valid_nbr) break;
         }
+        if (not found_valid_nbr) {
+            continue;
+        }
+        
 
         if (prisoners_dominate_exits(graph, cover, prisoners, exits)) {
             // std::cout << "Applying rule 3 to " << v << "\n";
@@ -210,11 +216,101 @@ bool decompress_verify(Graph const& original, Cover const& cover) {
     return true;
 }
 
-void apply_reductions(Graph const& graph, Cover& cover) {
+void compute_connected_components(Graph const& graph, Cover& cover) {
+    // Assumes cover.connected_components is all 0s.
+    cover.num_components = 0;
+    cover.components = std::vector<size_t>(graph.n, 0);
+    size_t seen = 0;
+    while (seen != graph.n - cover.num_removed_nodes) {
+        std::vector<node_t> static stack;
+        stack.clear();
+        for (auto const& node : graph.vertices) {
+            if (not cover.is_removed(node) and cover.components[node] == 0) {
+                stack.push_back(node);
+                break;
+            }
+        }
+        cover.num_components++;
+
+        cover.components[stack[stack.size() - 1]] = cover.num_components;
+        seen++;
+        while (not stack.empty()) {
+            node_t const n = stack[stack.size() - 1];
+            stack.pop_back();
+
+            for (node_t neighbor : graph.neighbors(n)) {
+                if (cover.components[neighbor] == 0) {
+                    cover.components[neighbor] = cover.num_components;
+                    stack.push_back(neighbor);
+                    seen++;
+                }
+            }
+        }
+    }
+}
+
+void find_cut_vertices(Graph const& graph, Cover const& cover, std::vector<node_t>& cut_vertices) {
+    // std::vector<node_t> stack;
+    // std::vector<bool> static visited = std::vector<bool>(graph.n, false);               // These will require optimization
+    // std::vector<size_t> static lowest_neighbor_time = std::vector<size_t>(graph.n, 0);
+    // std::vector<size_t> static discovery_time = std::vector<size_t>(graph.n, 0);
+    // std::vector<node_t> static parents = std::vector<node_t>(graph.n, 0);
+    // size_t time = 0;
+    // size_t children = 0;
+    // for (node_t n : graph.vertices) {
+    //     if (not cover.is_removed(n)) {
+    //         stack.push_back(n);
+    //         break;
+    //     }
+    // }
+    // while (not stack.empty()) {
+    //     node_t n = stack[stack.size() - 1];
+    //     stack.pop_back();
+    // 
+    //     visited[n] = true;
+    //     lowest_neighbor_time[n] = time;
+    //     discovery_time[n] = time;
+    //     time++;
+    // 
+    //     for (node_t neighbor : graph.neighbors(n)) {
+    //         if (cover.is_removed(neighbor)) continue;
+    //         if (not visited[neighbor]) {
+    //             parent[neighbor] = n;
+    //             children++;
+    //             stack.push_back(neighbor);
+    //         }
+    //     }
+    // }
+}
+
+bool apply_rule_four(Graph const& graph, Cover& cover, size_t const component = 0) {
+    return false;
+}
+
+void apply_reductions(Graph const& graph, Cover& cover, bool one_enabled, bool two_enabled, bool three_enabled, bool four_enabled, size_t const component = 0) {
+    bool need_to_compute_connected_components = true;
     while (true) {
-        if (apply_rule_one(graph, cover)) continue;
-        if (apply_rule_two(graph, cover)) continue;
-        if (apply_rule_three(graph, cover)) continue;
+        if (one_enabled and apply_rule_one(graph, cover, component)) {
+            need_to_compute_connected_components = true;
+            continue;
+        }
+        if (two_enabled and apply_rule_two(graph, cover, component)) {
+            continue;
+        }
+        if (three_enabled and apply_rule_three(graph, cover, component)) {
+            need_to_compute_connected_components = true;
+            continue;
+        }
+        // if (four_enabled and need_to_compute_connected_components) {
+        //     compute_connected_components(graph, cover);
+        //     apply_rule_four(graph, cover, component);
+        //     need_to_compute_connected_components = false;
+        //     continue;
+        // }
+
+        // if (need_to_compute_connected_components) {
+        //     compute_connected_components(graph, cover);
+        // }
         return;
     }
 }
@@ -223,6 +319,7 @@ void compute_all_maximal_cliques(Graph const& graph, Cover const& cover, node_co
     // This is just Bron Kerbosch
     if (P.empty() and X.empty()) {
         cliques.push_back(R);
+        // std::cerr << "Got clique " << cliques.size() << "\n";
         return;
     }
 
@@ -263,7 +360,7 @@ size_t compute_score(Graph const& graph, Cover const& cover, node_t v1, node_t v
     return result;
 }
 
-std::pair<node_t, node_t> const pick_lowest_score_edge(Graph const& graph, Cover const& cover) {
+std::pair<node_t, node_t> pick_lowest_score_edge(Graph const& graph, Cover const& cover) {
     // Pick the lowest score edge. (The edge whose common neighbors are closest to forming a clique)
     size_t best_score = std::numeric_limits<size_t>::max();
     std::pair<node_t, node_t> best_edge = {std::numeric_limits<node_t>::max(), std::numeric_limits<node_t>::max()};
@@ -283,7 +380,7 @@ std::pair<node_t, node_t> const pick_lowest_score_edge(Graph const& graph, Cover
     return best_edge;
 }
 
-std::pair<node_t, node_t> const pick_highest_score_edge(Graph const& graph, Cover const& cover) {
+std::pair<node_t, node_t> pick_highest_score_edge(Graph const& graph, Cover const& cover) {
     // Pick the lowest score edge. (The edge whose common neighbors are closest to forming a clique)
     size_t best_score = 0;
     std::pair<node_t, node_t> best_edge = {std::numeric_limits<node_t>::max(), std::numeric_limits<node_t>::max()};
@@ -303,7 +400,7 @@ std::pair<node_t, node_t> const pick_highest_score_edge(Graph const& graph, Cove
     return best_edge;
 }
 
-std::pair<node_t, node_t> const pick_first_edge(Graph const& graph, Cover const& cover) {
+std::pair<node_t, node_t> pick_first_edge(Graph const& graph, Cover const& cover) {
     // Pick the first edge.
     for (auto const& [v1, v1_neighbors] : graph.get_adj_list()) {
         if (cover.is_removed(v1)) continue;
@@ -313,33 +410,6 @@ std::pair<node_t, node_t> const pick_first_edge(Graph const& graph, Cover const&
         }
     }
     return {std::numeric_limits<node_t>::max(), std::numeric_limits<node_t>::max()};
-}
-
-void print_reduced_graph(Graph const& graph, Cover const& cover) {
-    // For debugging
-    for (auto const& [n, neighbors] : graph.get_adj_list()) {
-        if (cover.is_removed(n)) continue;
-        for (auto const& neighbor : neighbors) {
-            if (n > neighbor or cover.is_removed(neighbor)) continue;
-            if (cover.is_covered(n, neighbor)) {
-                // std::cout << "#color=red\n";
-            }
-            // std::cout << n << " " << neighbor << "\n";
-        }
-    }
-}
-
-void extract_irreducible_subgraph(Graph const& graph, Cover& cover) {
-    // Prints out all the edges in G that aren't covered by a single round of reductions.
-
-    apply_reductions(graph, cover);
-    for (auto const& [n1, neighbors] : graph.get_adj_list()) {
-        for (node_t n2 : neighbors) {
-            if (cover.is_covered(n1, n2)) {
-                // std::cout << n1 << " " << n2 << "\n";
-            }
-        }
-    }
 }
 
 void order_neighbors_by_neighbor_degree(Graph& graph) {
@@ -402,14 +472,19 @@ size_t size_of_big_edge_independent_set(Graph const& graph, Cover const& cover) 
 
     std::vector<std::pair<node_t, node_t>> ind_set;
     for (auto const& n1 : graph.vertices) {
-        auto const& neighbors = graph.neighbors(n1);
-
         if (cover.is_removed(n1)) continue;
+        
+        auto const& neighbors = graph.neighbors(n1);
         bool independent = true;
+
         for (auto const& n2 : neighbors) {
             if (n1 >= n2 or cover.is_removed(n2) or cover.is_covered(n1, n2)) continue;
             for (auto const& [v1, v2] : ind_set) {
-                if (n1 == v1 or n2 == v2 or n2 == v1 or n1 == v2 or (graph.has_edge(n1, v1) and graph.has_edge(n2, v1) and graph.has_edge(n1, v2) and graph.has_edge(n2, v2))) {
+                if ((n1 == v1 and graph.has_edge(v2, n2)) or
+                    (n2 == v2 and graph.has_edge(v1, n1)) or
+                    (n1 == v2 and graph.has_edge(v1, n2)) or
+                    (n2 == v1 and graph.has_edge(v2, n1)) or
+                    (graph.has_edge(n1, v1) and graph.has_edge(n2, v1) and graph.has_edge(n1, v2) and graph.has_edge(n2, v2))) {
                     independent = false;
                     break;
                 }
@@ -423,19 +498,22 @@ size_t size_of_big_edge_independent_set(Graph const& graph, Cover const& cover) 
     return ind_set.size();
 }
 
-bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t const k, size_t& total_calls) {
+bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t const k, size_t& total_calls, bool rule_one_enabled, bool rule_two_enabled, bool rule_three_enabled, bool rule_four_enabled) {
     total_calls++;
 
-    apply_reductions(graph, cover);
+    // std::cerr << "Applying reductions\n";
+    apply_reductions(graph, cover, rule_one_enabled, rule_two_enabled, rule_three_enabled, rule_four_enabled);
     if (cover.cliques.size() >= k) return false;
     if (is_edge_clique_cover(graph, cover)) return true;
 
-    size_t lower_bound = cover.cliques.size() + std::max(size_of_big_edge_independent_set(graph, cover), size_of_big_vertex_independent_set(graph, cover));
-    if (lower_bound >= k) return false;
+    // size_t lower_bound = cover.cliques.size() + size_of_big_edge_independent_set(graph, cover);
+    // std::cerr << "Found a lower bound of " << lower_bound << "\n";
+    // if (lower_bound >= k) return false;
 
-    std::pair<node_t, node_t> const best_edge = pick_lowest_score_edge(graph, cover);
-
-    if (best_edge.first == std::numeric_limits<node_t>::max()) {
+    // Pick edge to branch on
+    std::pair<node_t, node_t> const lowest_score_edge = pick_lowest_score_edge(graph, cover);
+    // std::cerr << "Got lowest score edge.\n";
+    if (lowest_score_edge.first == std::numeric_limits<node_t>::max()) {
         std::cerr << "Best edge never got set. Probably every vertex is deleted.\n";
         size_t removed_vertices = 0;
         for (bool removed : cover.removed_nodes) removed_vertices += removed;
@@ -443,39 +521,47 @@ bool compute_edge_clique_cover(Graph const& graph, Cover& cover, size_t const k,
         exit(1);
     }
 
-    // Make R, P, and X from Bron Kerbosch
-    // R contains vertices that have to be in the clique (for us, v1 and v2)
-    // P contains vertices that could be in the clique (for us, their common neighbors)
-    // X contains the clique as it is built. It's initialized empty.
-
-    node_container_t static common_neighbors;
-    common_neighbors.clear();
-    compute_common_neighbors(graph, cover, best_edge.first, best_edge.second, common_neighbors);
+    // R contains vertices that have to be in the clique (for us, the vertices in the edge we're branching on)
     node_container_t static R;
     R.clear();
-    R.insert(best_edge.first);
-    R.insert(best_edge.second);
+    R.insert(lowest_score_edge.first);
+    R.insert(lowest_score_edge.second);
+
+    // Contains vertices that could be in the clique (for us, the common neighbors)
+    node_container_t static common_neighbors;
+    common_neighbors.clear();
+    compute_common_neighbors(graph, cover, lowest_score_edge.first, lowest_score_edge.second, common_neighbors);
+    // std::cerr << "Got common neighbors.\n";
+    // X contains the clique as it is built. It starts empty.
     node_container_t static X;
     X.clear();
-    std::vector<node_container_t> cliques;
-    compute_all_maximal_cliques(graph, cover, R, common_neighbors, X, cliques);
-
+    std::vector<node_container_t> lowest_score_edge_cliques; // Cannot be static because used in multiple recursive calls at once.
+    compute_all_maximal_cliques(graph, cover, R, common_neighbors, X, lowest_score_edge_cliques);
+    
     Cover best_cover = Cover(graph.n);
     bool found_better_cover = false;
     size_t new_k = k;
-    // std::cout << "Branching on " << best_edge.first << " " << best_edge.second << "\n";
+
+    std::vector<node_container_t>& cliques = lowest_score_edge_cliques; // Left for future experiments with edge selection
+
+    // std::cout << "Branching on " << lowest_score_edge.first << " " << lowest_score_edge.second << "\n";
     for (node_container_t const& clique : cliques) {
         Cover new_cover = cover; // a copy, on purpose
         new_cover.cover_clique(clique);
-        // std::cout << "Starting branch with this clique: ";
-        // for (auto const& n : clique) std::cout << n << " ";
-        // std::cout << "\n";
-        if (compute_edge_clique_cover(graph, new_cover, new_k, total_calls) and new_cover.cliques.size() < new_k) {
+        // std::cerr << "Starting branch with this clique: ";
+        // for (auto const& n : clique) std::cerr << n << " ";
+        // std::cerr << "\n";
+        
+        bool result = compute_edge_clique_cover(graph, new_cover, new_k, total_calls, rule_one_enabled, rule_two_enabled, rule_three_enabled, rule_four_enabled);
+        if (result and new_cover.cliques.size() < new_k) {
             new_k = new_cover.cliques.size();
             best_cover = std::move(new_cover);
             found_better_cover = true;
+            // std::cerr << "New best cover is " << new_cover.cliques.size() << "\n";
         }
-        // std::cout << "Branch over.\n";
+        // std::cout << "Branch with clique";
+        // for (auto const& n : clique) std::cout << n << " ";
+        // std::cout << "over.";
     }
 
     if (found_better_cover) {

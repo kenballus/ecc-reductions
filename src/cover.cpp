@@ -1,6 +1,8 @@
 #include <cassert>
 #include <utility>
 #include <vector>
+#include <cstddef>
+using std::size_t;
 
 #include "cover.hpp"
 #include "graph.hpp"
@@ -12,10 +14,38 @@ size_t NodePairHash::operator()(std::pair<uint32_t, uint32_t> const& p) const {
     return (((size_t)p.first) << sizeof(uint32_t)) | (size_t)p.second;
 }
 
-Cover::Cover() {}
+Cover::Cover() {
+    num_components = 0;
+    num_removed_nodes = 0;
+}
 
 Cover::Cover(size_t const number_of_nodes) {
+    num_components = 0;
+    num_removed_nodes = 0;
     removed_nodes = std::vector<bool>(number_of_nodes, false);
+    components = std::vector<size_t>(number_of_nodes, 0);
+}
+
+Cover::Cover(Cover const& other) {
+    num_removed_nodes = other.num_removed_nodes;
+    num_components = other.num_components;
+    removed_nodes = other.removed_nodes;
+    components = other.components;
+    covered_edges = other.covered_edges;
+    shadows = other.shadows;
+    cliques = other.cliques;
+}
+
+size_t Cover::get_component(node_t n) const {
+    return components[n];
+}
+
+void Cover::split_vertex(node_t n) {
+    // Requires that connected components have already been computed.
+    if (not removed_nodes[n]) {
+        removed_nodes[n] = true;
+        split_vertices.push_back({n});
+    }
 }
 
 bool Cover::is_covered(node_t v1, node_t v2) const {
@@ -23,6 +53,9 @@ bool Cover::is_covered(node_t v1, node_t v2) const {
 }
 
 void Cover::remove_node(node_t v) {
+    if (not removed_nodes[v]) {
+        num_removed_nodes++;
+    }
     removed_nodes[v] = true;
 }
 
